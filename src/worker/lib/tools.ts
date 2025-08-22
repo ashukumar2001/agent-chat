@@ -1,0 +1,28 @@
+import { tool } from "ai";
+import { z } from "zod";
+const getWeatherInformation = tool({
+    description: "Show the weather in a given city to the user",
+    inputSchema: z.object({ city: z.string() }),
+    execute: async ({ city }: { city: string }) => {
+        return `The weather in ${city} is sunny 😁`;
+    }
+});
+
+
+const getLocalTime = tool({
+    description: "get the local time for a specified location",
+    inputSchema: z.object({ location: z.string() }),
+    execute: async ({ location }) => {
+        console.log("Getting local time for ", location);
+        return "12:01 PM"
+    }
+});
+
+export const tools = {
+    getLocalTime,
+    getWeatherInformation
+}
+
+export const executions = {};
+
+export const toolsRequiringConfirmation = Object.keys(executions) as (keyof typeof tools)[];

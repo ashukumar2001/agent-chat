@@ -1,0 +1,401 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Cloudflare Workers Development Guide
+
+Version: 1.0.0
+
+Comprehensive guide for developing with Cloudflare Workers, Wrangler CLI, and related services in this project.
+
+## Wrangler Configuration
+
+### [wrangler.json](mdc:wrangler.json) Structure
+
+The main configuration file for Cloudflare Workers:
+
+```jsonc
+{
+  "name": "agent-chat",
+  "main": "./src/worker/index.ts",
+  "compatibility_date": "2025-04-01",
+  "compatibility_flags": ["nodejs_compat", "nodejs_compat_populate_process_env"],
+  "observability": { "enabled": true },
+  "upload_source_maps": true,
+  "assets": { "not_found_handling": "single-page-application" }
+}
+```
+
+### Environment Configuration
+
+Two environments configured: `dev` and `prod`
+
+**Development Environment:**
+```jsonc
+"env": {
+  "dev": {
+    "vars": { "CLOUDFLARE_ENV": "dev" },
+    "durable_objects": {
+      "bindings": [
+        { "name": "Chat", "class_name": "Chat" },
+        { "name": "MyChatAgent", "class_name": "MyChatAgent" }
+      ]
+    },
+    "d1_databases": [
+      {
+        "binding": "DB",
+        "database_name": "my-db-name",
+        "database_id": "9cc06525-7e6f-4b34-a1f7-3a055337b9fb",
+        "migrations_dir": "./src/worker/drizzle"
+      }
+    ],
+    "ai": { "binding": "AI" }
+  }
+}
+```
+
+## Wrangler CLI Commands
+
+### Development Commands
+
+```bash
+# Start local development server
+wrangler dev
+
+# Start with specific environment
+CLOUDFLARE_ENV=dev wrangler dev
+
+# Build and check bundle size
+wrangler deploy --dry-run
+```
+
+### Deployment Commands
+
+```bash
+# Deploy to development
+npm run deploy
+
+# Deploy to production
+npm run deploy:prod
+
+# Build without deploying
+npm run build
+npm run build:prod
+```
+
+### Database Commands
+
+```bash
+# Generate migrations from schema
+npm run db:generate
+
+# Apply migrations locally
+npm run db:migrate-local
+
+# Apply migrations to dev environment
+npm run db:migrate:dev
+
+# Apply migrations to production
+npm run db:migrate:prod
+
+# Open database studio
+npm run db:studio
+```
+
+### Type Generation
+
+```bash
+# Generate types for dev environment
+npm run cf-typegen
+
+# Generate types for prod environment
+npm run cf-typegen:prod
+```
+
+## Worker Entry Point
+
+### [src/worker/index.ts](mdc:src/worker/index.ts)
+
+Main worker file structure:
+
+```typescript
+export { Chat } from "./agents/chat";
+export { MyChatAgent } from "./agents/my-chat-agent";
+import { trpcServer } from "@hono/trpc-server";
+import { logger } from "hono/logger"
+import { Hono } from "hono";
+import { createContext } from "./trpc";
+import { appRouter } from "./routes";
+import { routeAgentRequest } from "agents";
+import { auth } from "./lib/auth";
+
+const app = new Hono<{ Bindings: Env }>();
+
+// Middleware
+app.use("*", logger());
+
+// Authentication routes
+app.on(["POST", "GET"], "/api/auth/**", (c) => auth.handler(c.req.raw));
+
+// Health check
+app.get("/api/health", (c) => c.json({ status: true }, 200))
+
+// tRPC routes
+app.use("/trpc/*", async (c, next) =>
+    trpcServer({
+        router: appRouter,
+        createContext: () => createContext(c),
+    })(c, next)
+);
+
+// Agent routes
+app.get("/agents/**", async (c) => {
+    return (await routeAgentRequest(c.req.raw, c.env)) || new Response("Not found", { status: 404 })
+})
+
+export default app;
+```
+
+## Bindings Configuration
+
+### Environment Variables (Env interface)
+
+Automatically generated in `worker-configuration.d.ts`:
+
+```typescript
+interface Env {
+  // Database binding
+  DB: D1Database;
+  
+  // AI model binding
+  AI: Ai;
+  
+  // Durable Object bindings
+  Chat: DurableObjectNamespace;
+  MyChatAgent: DurableObjectNamespace;
+  
+  // Environment variables
+  CLOUDFLARE_ENV: string;
+  
+  // Add your environment variables here
+  OPENAI_API_KEY?: string;
+  ANTHROPIC_API_KEY?: string;
+}
+```
+
+### Durable Objects
+
+Agents are implemented as Durable Objects with persistence:
+
+```typescript
+// In wrangler.json
+"durable_objects": {
+  "bindings": [
+    { "name": "Chat", "class_name": "Chat" },
+    { "name": "MyChatAgent", "class_name": "MyChatAgent" }
+  ]
+},
+"migrations": [
+  {
+    "tag": "v0",
+    "new_sqlite_classes": ["Chat", "MyChatAgent"]
+  }
+]
+```
+
+### D1 Database
+
+SQLite database binding configuration:
+
+```typescript
+// Accessing the database in your worker
+export default {
+  async fetch(request, env, ctx) {
+    // Query the database
+    const result = await env.DB.prepare("SELECT * FROM users").all();
+    return Response.json(result);
+  }
+}
+```
+
+### AI Binding
+
+Access to Cloudflare AI models:
+
+```typescript
+// Using the AI binding
+export default {
+  async fetch(request, env, ctx) {
+    const response = await env.AI.run("@cf/meta/llama-2-7b-chat-int8", {
+      messages: [{ role: "user", content: "Hello!" }]
+    });
+    return Response.json(response);
+  }
+}
+```
+
+## Development Best Practices
+
+### 1. Environment Variables
+
+Store sensitive data in environment files:
+- `.dev.vars.dev` - Development secrets
+- `.dev.vars.prod` - Production secrets
+
+Never commit these files to version control.
+
+### 2. Type Safety
+
+Generate types after configuration changes:
+```bash
+npm run cf-typegen
+```
+
+This creates type definitions for your bindings in `worker-configuration.d.ts`.
+
+### 3. Local Development
+
+```bash
+# Start development with hot reloading
+npm run dev
+
+# This runs both:
+# - Vite dev server for React app
+# - Wrangler dev for Workers backend
+```
+
+### 4. Error Handling
+
+Use proper error handling in your workers:
+
+```typescript
+export default {
+  async fetch(request, env, ctx) {
+    try {
+      // Your worker logic
+      return new Response("Success");
+    } catch (error) {
+      console.error("Worker error:", error);
+      return new Response("Internal Server Error", { status: 500 });
+    }
+  }
+}
+```
+
+### 5. Logging
+
+Use structured logging for debugging:
+
+```typescript
+import { logger } from "hono/logger";
+
+const app = new Hono();
+app.use("*", logger());
+
+// In your handlers
+console.log("Processing request:", { url: request.url, method: request.method });
+```
+
+## Deployment Workflow
+
+### 1. Development Deployment
+
+```bash
+npm run deploy
+```
+
+This:
+- Builds the project with `CLOUDFLARE_ENV=dev`
+- Deploys to the dev environment
+- Uses dev database and environment variables
+
+### 2. Production Deployment
+
+```bash
+npm run deploy:prod
+```
+
+This:
+- Builds the project with `CLOUDFLARE_ENV=prod`
+- Deploys to the production environment
+- Uses production database and environment variables
+
+### 3. Database Migrations
+
+Always run migrations after deployment:
+
+```bash
+# For development
+npm run db:migrate:dev
+
+# For production
+npm run db:migrate:prod
+```
+
+## Monitoring and Debugging
+
+### 1. Real-time Logs
+
+View logs in development:
+```bash
+wrangler tail
+```
+
+### 2. Analytics
+
+Access Worker analytics in the Cloudflare dashboard to monitor:
+- Request volume
+- Error rates
+- Response times
+- CPU usage
+
+### 3. Observability
+
+Observability is enabled in `wrangler.json`:
+```jsonc
+"observability": { "enabled": true }
+```
+
+This provides detailed metrics and tracing.
+
+## Common Patterns
+
+### 1. Request Routing
+
+```typescript
+const app = new Hono<{ Bindings: Env }>();
+
+app.get("/api/users", async (c) => {
+  const users = await c.env.DB.prepare("SELECT * FROM users").all();
+  return c.json(users.results);
+});
+
+app.post("/api/users", async (c) => {
+  const body = await c.req.json();
+  // Insert user logic
+  return c.json({ success: true });
+});
+```
+
+### 2. Middleware Usage
+
+```typescript
+import { cors } from 'hono/cors';
+import { logger } from 'hono/logger';
+
+app.use("*", logger());
+app.use("*", cors({
+  origin: ["http://localhost:5173", "https://your-domain.com"],
+  credentials: true,
+}));
+```
+
+### 3. Error Boundaries
+
+```typescript
+app.onError((err, c) => {
+  console.error("Unhandled error:", err);
+  return c.json({ error: "Internal Server Error" }, 500);
+});
+```

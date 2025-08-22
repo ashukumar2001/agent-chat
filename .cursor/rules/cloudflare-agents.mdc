@@ -1,0 +1,574 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Cloudflare AI Agents Guidelines
+
+Version: 1.0.0
+
+Rules and best practices for building AI Agents on Cloudflare Workers
+
+## Agent Structure
+
+Basic structure for creating Cloudflare AI Agents
+
+### Basic Agent Implementation
+
+The fundamental structure of any Cloudflare Agent
+
+```typescript
+import { Agent } from 'agents';
+
+export class MyAgent extends Agent {
+  async onRequest(request) {
+    // Transform intention into response
+    return new Response('Ready to assist.');
+  }
+}
+```
+
+### AI-powered Agent
+
+Agent integrated with OpenAI for AI capabilities
+
+```typescript
+import { Agent } from 'agents';
+import { OpenAI } from 'openai';
+
+export class AIAgent extends Agent {
+  async onRequest(request) {
+    // Connect with AI capabilities
+    const ai = new OpenAI({
+      apiKey: this.env.OPENAI_API_KEY,
+    });
+
+    // Process and understand
+    const response = await ai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [{ role: 'user', content: await request.text() }],
+    });
+
+    return new Response(response.choices[0].message.content);
+  }
+}
+```
+
+### AIChatAgent Implementation
+
+Setup for AI-powered conversational agents
+
+```typescript
+import { AIChatAgent } from 'agents/ai-chat-agent';
+import { openai } from '@ai-sdk/openai';
+import { createDataStreamResponse, streamText } from '@ai-sdk/core';
+
+export class DialogueAgent extends AIChatAgent {
+  async onChatMessage(onFinish) {
+    return createDataStreamResponse({
+      execute: async (dataStream) => {
+        const stream = streamText({
+          model: openai('gpt-4o'),
+          messages: this.messages,
+          onFinish, // call onFinish so that messages get saved
+        });
+
+        stream.mergeIntoDataStream(dataStream);
+      },
+    });
+  }
+}
+```
+
+## Agent Lifecycle
+
+Lifecycle methods and state management for Agents
+
+### State Management
+
+Using setState and handling state updates
+
+```typescript
+export class ThinkingAgent extends Agent {
+  async evolve(newInsight) {
+    this.setState({
+      ...this.state,
+      insights: [...(this.state.insights || []), newInsight],
+      understanding: this.state.understanding + 1,
+    });
+  }
+
+  onStateUpdate(state, source) {
+    console.log('Understanding deepened:', {
+      newState: state,
+      origin: source,
+    });
+  }
+}
+```
+
+### Initial State Configuration
+
+Setting up the initial state of an agent
+
+```typescript
+type State = {
+  counter: number;
+  text: string;
+  color: string;
+};
+
+class MyAgent extends Agent<Env, State> {
+  initialState = {
+    counter: 0,
+    text: '',
+    color: '#3B82F6'
+  };
+
+  doSomething() {
+    console.log(this.state); // {counter: 0, text: "", color: "#3B82F6"}, if you haven't set the state yet
+  }
+}
+```
+
+### Task Scheduling
+
+Scheduling tasks to be executed in the future
+
+```typescript
+export class TimeAwareAgent extends Agent {
+  async initialize() {
+    // Quick reflection
+    this.schedule(10, 'quickInsight', { focus: 'patterns' });
+
+    // Daily synthesis
+    this.schedule('0 0 * * *', 'dailySynthesis', {
+      depth: 'comprehensive',
+    });
+
+    // Milestone review
+    this.schedule(new Date('2024-12-31'), 'yearlyAnalysis');
+  }
+
+  async quickInsight(data) {
+    await this.analyze(data.focus);
+  }
+
+  async dailySynthesis(data) {
+    await this.synthesize(data.depth);
+  }
+
+  async yearlyAnalysis() {
+    await this.analyze();
+  }
+}
+```
+
+## Agent Connectivity
+
+Methods for connecting to and communicating with Agents
+
+### WebSocket Connection
+
+Handling WebSocket connections in an agent
+
+```typescript
+export class DialogueAgent extends Agent {
+  async onConnect(connection) {
+    await this.initiate(connection);
+  }
+
+  async onMessage(connection, message) {
+    const understanding = await this.comprehend(message);
+    await this.respond(connection, understanding);
+  }
+}
+```
+
+### Client Connection
+
+Connecting to an agent from client-side code
+
+```typescript
+import { AgentClient } from 'agents/client';
+
+const connection = new AgentClient({
+  agent: 'dialogue-agent',
+  name: 'insight-seeker',
+});
+
+connection.addEventListener('message', (event) => {
+  console.log('Received:', event.data);
+});
+
+connection.send(
+  JSON.stringify({
+    type: 'inquiry',
+    content: 'What patterns do you see?',
+  })
+);
+```
+
+## React Integration
+
+Integrating Agents with React applications
+
+### useAgent Hook
+
+Using the useAgent hook to connect to an agent
+
+```typescript
+import { useAgent } from 'agents/react';
+
+function AgentInterface() {
+  const connection = useAgent({
+    agent: 'dialogue-agent',
+    name: 'insight-seeker',
+    onMessage: (message) => {
+      console.log('Understanding received:', message.data);
+    },
+    onOpen: () => console.log('Connection established'),
+    onClose: () => console.log('Connection closed'),
+  });
+
+  const inquire = () => {
+    connection.send(
+      JSON.stringify({
+        type: 'inquiry',
+        content: 'What insights have you gathered?',
+      })
+    );
+  };
+
+  return (
+    <div className="agent-interface">
+      <button onClick={inquire}>Seek Understanding</button>
+    </div>
+  );
+}
+```
+
+### State Synchronization
+
+Synchronizing agent state with React component state
+
+```typescript
+import { useState } from 'react';
+import { useAgent } from 'agents/react';
+
+function StateInterface() {
+  const [state, setState] = useState({ counter: 0 });
+
+  const agent = useAgent({
+    agent: 'thinking-agent',
+    onStateUpdate: (newState) => setState(newState),
+  });
+
+  const increment = () => {
+    agent.setState({ counter: state.counter + 1 });
+  };
+
+  return (
+    <div>
+      <div>Count: {state.counter}</div>
+      <button onClick={increment}>Increment</button>
+    </div>
+  );
+}
+```
+
+### AI Chat Interface
+
+Creating a chat interface with the useAgentChat hook
+
+```typescript
+import { useAgent } from 'agents/react';
+import { useAgentChat } from 'agents/ai-react';
+
+function ChatInterface() {
+  // Connect to the agent
+  const agent = useAgent({
+    agent: 'dialogue-agent',
+  });
+
+  // Set up the chat interaction
+  const { messages, input, handleInputChange, handleSubmit, clearHistory } =
+    useAgentChat({
+      agent,
+      maxSteps: 5,
+    });
+
+  return (
+    <div className="chat-interface">
+      {/* Message History */}
+      <div className="message-flow">
+        {messages.map((message) => (
+          <div key={message.id} className="message">
+            <div className="role">{message.role}</div>
+            <div className="content">{message.content}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Input Area */}
+      <form onSubmit={handleSubmit} className="input-area">
+        <input
+          value={input}
+          onChange={handleInputChange}
+          placeholder="Type your message..."
+          className="message-input"
+        />
+      </form>
+
+      <button onClick={clearHistory} className="clear-button">
+        Clear Chat
+      </button>
+    </div>
+  );
+}
+```
+
+### Human-in-the-Loop Chat
+
+Implementing a chat interface with human approval of AI tool calls
+
+```typescript
+function Chat() {
+  // Initialize agent and chat hooks
+  const agent = useAgent({ agent: 'human-in-the-loop' });
+  const { messages, addToolResult } = useAgentChat({ agent });
+
+  return (
+    <div className="chat-container">
+      {messages.map((message) => (
+        <div key={message.id}>
+          {/* Render normal messages */}
+          {message.type === 'text' && (
+            <div className="message">{message.content}</div>
+          )}
+
+          {/* Render tool approval requests */}
+          {message.type === 'tool-invocation' && (
+            <div className="tool-approval">
+              <p>
+                Approve {message.tool} for {message.args.city}?
+              </p>
+              <button onClick={() => addToolResult(message.id, 'approve')}>
+                Yes
+              </button>
+              <button onClick={() => addToolResult(message.id, 'reject')}>
+                No
+              </button>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+## Hono Integration
+
+Using Agents with Hono framework
+
+### Hono Middleware Setup
+
+Integrating agents as middleware in a Hono application
+
+```typescript
+import { Hono } from 'hono';
+import { Agent } from 'agents';
+import { agentsMiddleware } from 'hono-agents';
+
+// Define your agent classes
+export class ChatAgent extends Agent {
+  async onRequest(request) {
+    return new Response('Ready to assist with chat.');
+  }
+}
+
+export class AssistantAgent extends Agent {
+  async onRequest(request) {
+    return new Response('I\'m your AI assistant.');
+  }
+}
+
+// Basic setup
+const app = new Hono();
+app.use('*', agentsMiddleware());
+
+// or with authentication
+app.use(
+  '*',
+  agentsMiddleware({
+    options: {
+      onBeforeConnect: async (req) => {
+        const token = req.headers.get('authorization');
+        // validate token
+        if (!token) return new Response('Unauthorized', { status: 401 });
+      },
+    },
+  })
+);
+
+// With error handling
+app.use('*', agentsMiddleware({ onError: (error) => console.error(error) }));
+
+// With custom routing
+app.use(
+  '*',
+  agentsMiddleware({
+    options: {
+      prefix: 'agents', // Handles /agents/* routes only
+    },
+  })
+);
+
+export default app;
+```
+
+## AI Integration
+
+Integrating AI services with Agents
+
+### AI SDK Integration
+
+Using the AI SDK for generating text with OpenAI
+
+```typescript
+import { openai } from '@ai-sdk/openai';
+import { generateText } from 'ai';
+
+async function generateResponse(prompt) {
+  const { text } = await generateText({
+    model: openai('gpt-4o'),
+    prompt: prompt,
+  });
+
+  return text;
+}
+```
+
+### Structured AI Output
+
+Using the AI SDK with Zod for structured outputs
+
+```typescript
+import { openai } from '@ai-sdk/openai';
+import { generateObject } from 'ai';
+import { z } from 'zod';
+
+async function classifyQuery(query) {
+  const { object } = await generateObject({
+    model: openai('gpt-4o'),
+    schema: z.object({
+      type: z.enum(['general', 'technical', 'billing']),
+      priority: z.enum(['low', 'medium', 'high']),
+      summary: z.string(),
+    }),
+    prompt: `Classify this customer query: ${query}`,
+  });
+
+  return object;
+}
+```
+
+### Human-in-the-Loop Tool Calls
+
+Implementing tools that require human approval
+
+```typescript
+export class HumanInTheLoop extends AIChatAgent<Env> {
+  async onChatMessage(onFinish) {
+    return createDataStreamResponse({
+      execute: async (dataStream) => {
+        // Process messages and check for tool calls requiring confirmation
+        const processedMessages = await processToolCalls({
+          messages: this.messages,
+          dataStream,
+          tools: {
+            getWeatherInformation: {
+              requiresApproval: true,
+              execute: async ({ city }) => {
+                // Example tool implementation
+                return `The weather in ${city} is sunny.`;
+              },
+            },
+          },
+        });
+
+        // Stream response using the processed messages
+        streamText({
+          model: openai('gpt-4o'),
+          messages: processedMessages,
+          tools,
+          onFinish,
+        }).mergeIntoDataStream(dataStream);
+      },
+    });
+  }
+}
+```
+
+## Configuration
+
+Configuration for Cloudflare Workers and Durable Objects
+
+### wrangler.toml Configuration
+
+Configuring Durable Objects bindings in wrangler.toml
+
+```toml
+[durable_objects]
+bindings = [
+  { name = "ChatAgent", class_name = "ChatAgent" },
+  { name = "AssistantAgent", class_name = "AssistantAgent" }
+]
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["ChatAgent", "AssistantAgent"]
+```
+
+### Environment Setup
+
+Setting up a new Cloudflare Agents project
+
+```bash
+# Create a new project
+npm create cloudflare@latest -- --template cloudflare/agents-starter
+
+# Or enhance an existing one
+npm install agents
+```
+
+## Best Practices
+
+### State Management
+
+- Use `this.setState()` to update agent state rather than modifying `this.state` directly
+- Define a type for your agent's state to ensure type safety
+- Set `initialState` in your agent class for default state values
+- Implement `onStateUpdate` to react to state changes from all sources
+
+### AI Integration
+
+- Use the AI SDK (@ai-sdk/openai) for structured interaction with AI models
+- Use Zod schemas to validate and type AI outputs
+- Always handle API errors and provide fallbacks for AI services
+- Store API keys in environment variables, never hardcode them
+
+### Performance
+
+- Minimize token usage by crafting efficient prompts
+- Use smaller models for simpler tasks to reduce latency and cost
+- Implement caching strategies for frequently requested information
+- Use streaming responses when appropriate for better user experience
+
+### Security
+
+- Validate all user inputs before processing
+- Implement authentication for agent connections
+- Use `onBeforeConnect` to authorize connection requests
+- Apply rate limiting to prevent abuse

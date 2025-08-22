@@ -2,7 +2,15 @@
   "extends": "./tsconfig.node.json",
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.worker.tsbuildinfo",
-    "types": ["vite/client", "./worker-configuration.d.ts"]
+    "types": ["node", "vite/client", "./worker-configuration.d.ts"]
   },
-  "include": ["src/worker"]
+  "paths": {
+    "@/*": ["./src/react-app/*"],
+    "@worker/*": ["./src/worker/*"]
+  },
+  "include": [
+    "src/worker",
+    "drizzle.config.ts",
+    "src/react-app/types/ai-types.ts"
+  ]
 }
