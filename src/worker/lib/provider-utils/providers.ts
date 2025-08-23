@@ -86,3 +86,5 @@ export const PROVIDERS: Provider[] = [
         icon: Preplexity,
     },
 ] as Provider[]
+
+export const SUGGESTED_PROVIDERS_IDS: string[] = PROVIDERS.map(provider => provider.id); 

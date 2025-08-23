@@ -1,24 +1,23 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Eye, EyeOff, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PROVIDERS } from "./constants";
 import { trpc } from "@/lib/trpc-client";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import useUserPreferences from "@/hooks/useUserPreferences";
 
 export const ApiKeysSettings: React.FC = () => {
   const queryClient = useQueryClient();
-  const { data: userApiKeys } = useQuery(
-    trpc.userSettings.getUserApiKeys.queryOptions()
-  );
+  const { userApiKeysStatus } = useUserPreferences();
   const { mutate: setUserApiKey } = useMutation(
     trpc.userSettings.setUserApiKey.mutationOptions({
       onSuccess: () => {
         toast.success("API key saved");
         queryClient.invalidateQueries({
-          queryKey: trpc.userSettings.getUserApiKeys.queryKey(),
+          queryKey: trpc.userSettings.getUserApiKeysStatus.queryKey(),
         });
       },
       onError: () => {
@@ -31,7 +30,7 @@ export const ApiKeysSettings: React.FC = () => {
       onSuccess: () => {
         toast.success("API key deleted");
         queryClient.invalidateQueries({
-          queryKey: trpc.userSettings.getUserApiKeys.queryKey(),
+          queryKey: trpc.userSettings.getUserApiKeysStatus.queryKey(),
         });
       },
       onError: () => {
@@ -39,7 +38,6 @@ export const ApiKeysSettings: React.FC = () => {
       },
     })
   );
-  const [apiKeys, setApiKeys] = useState<Record<string, string>>({});
   const [selectedProvider, setSelectedProvider] = useState<string>(
     PROVIDERS[0].id
   );
@@ -47,25 +45,14 @@ export const ApiKeysSettings: React.FC = () => {
   const [showKey, setShowKey] = useState<boolean>(false);
   const [hasChanges, setHasChanges] = useState(false);
 
-  // Load API keys from localStorage on mount
-  useEffect(() => {
-    const savedKeys: Record<string, string> = {};
-    PROVIDERS.forEach((provider) => {
-      const savedKey = localStorage.getItem(`apiKey_${provider.id}`);
-      if (savedKey) {
-        savedKeys[provider.id] = savedKey;
-      }
-    });
-    setApiKeys(savedKeys);
-  }, []);
-
-  console.log(userApiKeys);
-
   // Update input field when provider selection changes
   useEffect(() => {
-    setCurrentKeyInput(apiKeys[selectedProvider] || "");
+    const defaultKey = PROVIDERS.find(
+      (p) => p.id === selectedProvider
+    )?.defaultKey;
+    setCurrentKeyInput(userApiKeysStatus[selectedProvider] ? defaultKey! : "");
     setHasChanges(false);
-  }, [selectedProvider, apiKeys]);
+  }, [selectedProvider, userApiKeysStatus]);
 
   const handleProviderSelect = (providerId: string) => {
     setSelectedProvider(providerId);
@@ -77,48 +64,25 @@ export const ApiKeysSettings: React.FC = () => {
     setHasChanges(true);
   };
 
-  const handleToggleKeyVisibility = () => {
-    setShowKey(!showKey);
-  };
-
   const handleSaveApiKey = () => {
     if (currentKeyInput && currentKeyInput.trim()) {
-      localStorage.setItem(
-        `apiKey_${selectedProvider}`,
-        currentKeyInput.trim()
-      );
-      setApiKeys((prev) => ({
-        ...prev,
-        [selectedProvider]: currentKeyInput.trim(),
-      }));
       setUserApiKey({
         key: currentKeyInput.trim(),
         provider: selectedProvider,
       });
     } else {
-      localStorage.removeItem(`apiKey_${selectedProvider}`);
-      setApiKeys((prev) => ({
-        ...prev,
-        [selectedProvider]: "",
-      }));
       deleteUserApiKey({ provider: selectedProvider });
     }
     setHasChanges(false);
   };
 
   const handleDeleteKey = () => {
-    localStorage.removeItem(`apiKey_${selectedProvider}`);
-    setApiKeys((prev) => ({
-      ...prev,
-      [selectedProvider]: "",
-    }));
     setCurrentKeyInput("");
     setHasChanges(false);
     deleteUserApiKey({ provider: selectedProvider });
   };
 
   const selectedProviderData = PROVIDERS.find((p) => p.id === selectedProvider);
-
   return (
     <div className="space-y-6">
       <div>
@@ -135,7 +99,7 @@ export const ApiKeysSettings: React.FC = () => {
         <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
           {PROVIDERS.map((provider) => {
             const Icon = provider.icon;
-            const hasKey = !!apiKeys[provider.id];
+            const hasKey = userApiKeysStatus[provider.id];
             const isSelected = selectedProvider === provider.id;
 
             return (
@@ -175,7 +139,7 @@ export const ApiKeysSettings: React.FC = () => {
               <div>
                 <h4 className="font-medium">{selectedProviderData.name}</h4>
                 <p className="text-sm text-muted-foreground">
-                  {apiKeys[selectedProvider]
+                  {userApiKeysStatus[selectedProvider]
                     ? "Key configured"
                     : "No key configured"}
                 </p>
@@ -204,24 +168,11 @@ export const ApiKeysSettings: React.FC = () => {
                 onChange={(e) => handleKeyInputChange(e.target.value)}
                 className="pr-12"
               />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleToggleKeyVisibility}
-                className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
-              >
-                {showKey ? (
-                  <EyeOff className="h-3 w-3" />
-                ) : (
-                  <Eye className="h-3 w-3" />
-                )}
-              </Button>
             </div>
 
             {/* Save Button */}
             <div className="flex items-center justify-between">
-              {apiKeys[selectedProvider] && (
+              {userApiKeysStatus[selectedProvider] && (
                 <Button
                   type="button"
                   variant="destructive"

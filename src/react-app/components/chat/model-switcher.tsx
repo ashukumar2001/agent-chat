@@ -15,9 +15,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { MODELS } from "@worker/lib/models";
 import { cn } from "@/lib/utils";
 import { PROVIDERS } from "@worker/lib/provider-utils/providers";
+import useUserPreferences from "@/hooks/useUserPreferences";
 type ModelSwitcherProps = {
   selectedModel: string;
   handleModelChange: (model: string) => void;
@@ -27,9 +27,10 @@ export function ModelSwitcher({
   handleModelChange,
 }: ModelSwitcherProps) {
   const [open, setOpen] = React.useState(false);
-  const currentModel = MODELS.find((model) => model.id === selectedModel);
+  const { isLoadingUserPreferences, models } = useUserPreferences();
+  const currentModel = models.find((model) => model.id === selectedModel);
   const currentProvider = PROVIDERS.find(
-    (provider) => provider.id === currentModel?.icon
+    (provider) => provider.id === currentModel?.providerId
   );
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -39,6 +40,7 @@ export function ModelSwitcher({
           role="combobox"
           aria-expanded={open}
           className="justify-between rounded-full"
+          disabled={isLoadingUserPreferences}
         >
           {currentProvider?.icon && (
             <currentProvider.icon className="w-4 h-4" />
@@ -54,9 +56,9 @@ export function ModelSwitcher({
           <CommandList>
             <CommandEmpty>No model found.</CommandEmpty>
             <CommandGroup>
-              {MODELS.map((model) => {
+              {models.map((model) => {
                 const provider = PROVIDERS.find(
-                  (provider) => provider.id === model.provider
+                  (provider) => provider.id === model.providerId
                 );
                 return (
                   <CommandItem
@@ -72,30 +74,6 @@ export function ModelSwitcher({
                       {provider?.icon && <provider.icon className="w-4 h-4" />}
                       {model.name}
                     </div>
-                    {/* <div className="flex items-center gap-2">
-                    {model.features?.map((feature) => {
-                      if (feature.id === "tool-use" && feature.enabled) {
-                        return (
-                          <Badge
-                            key={feature.id}
-                            variant="outline"
-                            className="text-[8px] font-normal"
-                          >
-                            Tools
-                          </Badge>
-                        );
-                      }
-                      return null;
-                    })}
-                    <Check
-                      className={cn(
-                        "ml-auto",
-                        currentModel?.id === model.id
-                          ? "opacity-100"
-                          : "opacity-0"
-                      )}
-                    />
-                  </div> */}
                   </CommandItem>
                 );
               })}

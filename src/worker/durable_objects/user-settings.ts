@@ -34,10 +34,10 @@ export class UserSettings extends DurableObject<Env> {
         return Object.fromEntries(this.userApiKeys);
     }
 
-    async getUserApiKeys() {
+    async getUserApiKeysStatus() {
         await this.ensureLoadedFromStorage();
-        if (this.userApiKeys.size === 0) return {} as Record<string, string>;
-        return Object.fromEntries(this.userApiKeys);
+        if (this.userApiKeys.size === 0) return [];
+        return Array.from(this.userApiKeys.keys());
     }
 
     async getUserApiKeyFromProviderId(providerId: string) {
