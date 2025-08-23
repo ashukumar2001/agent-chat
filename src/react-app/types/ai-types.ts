@@ -65,16 +65,8 @@ export type IncomingMessage =
         init: Pick<
             RequestInit,
             | "method"
-            | "keepalive"
             | "headers"
             | "body"
-            | "redirect"
-            | "integrity"
-            | "credentials"
-            | "mode"
-            | "referrer"
-            | "referrerPolicy"
-            | "window"
         >;
     }
     | {

@@ -73,13 +73,17 @@
           {
             "name": "MyChatAgent",
             "class_name": "MyChatAgent"
+          },
+          {
+            "name": "UserSettings",
+            "class_name": "UserSettings"
           }
         ]
       },
       "migrations": [
         {
           "tag": "v0",
-          "new_sqlite_classes": ["MyChatAgent"]
+          "new_sqlite_classes": ["MyChatAgent", "UserSettings"]
         }
       ],
       "d1_databases": [

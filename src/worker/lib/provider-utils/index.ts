@@ -42,25 +42,7 @@ type ModelSettings<T extends SupportedModel> = T extends OpenAIModel
     : never
 
 export type OpenProvidersOptions<T extends SupportedModel> = ModelSettings<T>
-// Get Ollama base URL from environment or use default
-const getOllamaBaseURL = () => {
-    if (typeof window !== "undefined") {
-        // Client-side: use localhost
-        return "http://localhost:11434/v1"
-    }
 
-    // Server-side: check environment variables
-    return (process.env.OLLAMA_BASE_URL?.replace(/\/+$/, "") + "/v1" || "http://localhost:11434/v1");
-}
-
-// Create Ollama provider instance with configurable baseURL
-const createOllamaProvider = () => {
-    return createOpenAI({
-        baseURL: getOllamaBaseURL(),
-        apiKey: "ollama", // Ollama doesn't require a real API key
-        name: "ollama",
-    })
-}
 
 export function openproviders<T extends SupportedModel>(
     modelId: T,
@@ -148,13 +130,6 @@ export function openproviders<T extends SupportedModel>(
             return xaiProvider(modelId as XaiModel,)
         }
         return xai(modelId as XaiModel)
-    }
-
-    if (provider === "ollama") {
-        const ollamaProvider = createOllamaProvider()
-        return ollamaProvider(
-            modelId as OllamaModel,
-        )
     }
 
     throw new Error(`Unsupported model: ${modelId}`)

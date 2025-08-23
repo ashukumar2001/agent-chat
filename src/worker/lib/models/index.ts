@@ -6,7 +6,6 @@ import { perplexityModels } from "./data/perplexity";
 import { openaiModels } from "./data/openai";
 import { grokModels } from "./data/grok";
 import { mistralModels } from "./data/mistral";
-import { ollamaModels } from "./data/ollama";
 import { openrouterModels } from "./data/openrouter";
 import { llamaModels } from "./data/llama";
 
@@ -18,7 +17,6 @@ export const MODELS: ModelConfig[] = [
     ...openaiModels,
     ...grokModels,
     ...mistralModels,
-    ...ollamaModels,
     ...openrouterModels,
     ...llamaModels,
 ]

@@ -16,7 +16,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { PROVIDERS } from "@worker/lib/provider-utils/providers";
+import { PROVIDERS } from "@/lib/providers";
 import useUserPreferences from "@/hooks/useUserPreferences";
 type ModelSwitcherProps = {
   selectedModel: string;

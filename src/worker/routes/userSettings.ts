@@ -1,7 +1,8 @@
 import z from "zod";
 import { protectedProcedure, router } from "../trpc";
 import { encryptString } from "../lib/crypto";
-import { SUGGESTED_PROVIDERS_IDS } from "../lib/provider-utils/providers";
+// import { SUGGESTED_PROVIDERS_IDS } from "../../react-app/lib/providers";
+const SUGGESTED_PROVIDERS_IDS = ["openai", "mistral", "perplexity", "google", "anthropic", "xai", "ollama", "openrouter"];
 
 export const userSettings = router({
     getUserApiKeysStatus: protectedProcedure.query(async ({ ctx }) => {

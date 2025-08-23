@@ -15,6 +15,17 @@ CREATE TABLE `accounts` (
 	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
+CREATE TABLE `chats` (
+	`id` text NOT NULL,
+	`user_id` text NOT NULL,
+	`model` text DEFAULT '' NOT NULL,
+	`created_at` integer DEFAULT (unixepoch()),
+	`updated_at` integer DEFAULT (unixepoch()),
+	`name` text,
+	PRIMARY KEY(`id`, `user_id`),
+	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
 CREATE TABLE `sessions` (
 	`id` text PRIMARY KEY NOT NULL,
 	`expires_at` integer NOT NULL,
@@ -35,7 +46,8 @@ CREATE TABLE `users` (
 	`email_verified` integer NOT NULL,
 	`image` text,
 	`created_at` integer NOT NULL,
-	`updated_at` integer NOT NULL
+	`updated_at` integer NOT NULL,
+	`is_anonymous` integer
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `users_email_unique` ON `users` (`email`);--> statement-breakpoint

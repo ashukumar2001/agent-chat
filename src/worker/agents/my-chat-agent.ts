@@ -111,15 +111,26 @@ export class MyChatAgent extends Agent<Env> {
      */
     async #reply(id: string, response: Response): Promise<void> {
         return this.#tryCatch(async () => {
-            for await (const chunk of response.body || []) {
-                const body = decoder.decode(chunk);
-                this.#broadcastChatMessage({
-                    id,
-                    type: MessageType.CF_AGENT_USE_CHAT_RESPONSE,
-                    body,
-                    done: false
-                });
+            if (response.body) {
+                const reader = response.body.getReader();
+                try {
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        const body = decoder.decode(value);
+                        this.#broadcastChatMessage({
+                            id,
+                            type: MessageType.CF_AGENT_USE_CHAT_RESPONSE,
+                            body,
+                            done: false
+                        });
+                    }
+                } finally {
+                    reader.releaseLock();
+                }
             }
+
             this.#broadcastChatMessage({
                 id,
                 type: MessageType.CF_AGENT_USE_CHAT_RESPONSE,

@@ -1,4 +1,4 @@
-import { openproviders } from "@worker/lib/provider-utils"
+import { openproviders } from "../../provider-utils"
 import { ModelConfig } from "../types"
 
 const claudeModels: ModelConfig[] = [
