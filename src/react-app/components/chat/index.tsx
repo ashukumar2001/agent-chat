@@ -1,11 +1,12 @@
 import { useAgent } from "agents/react";
 import { ChatBox } from "./chat-box";
 import { ChatInput } from "../chat-input";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { tools, toolsRequiringConfirmation } from "@worker/lib/tools";
 import { DEFUALT_MODEL } from "@worker/lib/config";
 import { useChats } from "@/hooks/use-chats";
 import { useAgentChat } from "@/hooks/use-agent-chat";
+import { toast } from "sonner";
 
 export const Chat = ({
   chatId,
@@ -25,8 +26,13 @@ export const Chat = ({
     status,
   } = useAgentChat({
     agent,
+    onError: (error) => {
+      toast.error("An error occurred", {
+        description: error?.message,
+        closeButton: true,
+      });
+    },
   });
-
   // Wrapper to match ChatBox's expected signature
   const addToolResult = ({
     toolCallId,
@@ -113,7 +119,9 @@ export const Chat = ({
     );
     setAgentInput("");
   };
-
+  useEffect(() => {
+    console.log(agentMessages);
+  }, [agentMessages]);
   return (
     <div className="@container/main relative flex h-full flex-col items-center justify-end md:justify-center">
       <ChatBox

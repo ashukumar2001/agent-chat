@@ -7,6 +7,7 @@ import {
     createUIMessageStreamResponse,
     createUIMessageStream,
     UIMessageStreamOnFinishCallback,
+    stepCountIs,
 } from "ai";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { DEFAULT_SYSTEM_PROMPT, DEFUALT_MODEL } from "../lib/config";
@@ -14,6 +15,7 @@ import { MODELS } from "../lib/models";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { MessageType, OutgoingMessage } from "../../react-app/types/ai-types";
 import { getUserKey } from "../lib/user-keys";
+import { tools } from "../lib/tools";
 
 const decoder = new TextDecoder();
 
@@ -223,18 +225,18 @@ export class MyChatAgent extends Agent<Env> {
                     modelInstance = google(modelConfig.id);
 
                 }
-                // const toolsEnabled = modelConfig.tools === true;
+                const toolsEnabled = modelConfig.tools === true;
                 const processedMessages = convertToModelMessages(messages);
                 const result = streamText({
                     model: modelInstance!,
                     system: DEFAULT_SYSTEM_PROMPT,
                     messages: processedMessages,
                     abortSignal: options?.abortSignal,
-                    // TODO: Add tools
-                    // tools: toolsEnabled ? tools : undefined,
+                    tools: toolsEnabled ? tools : undefined,
                     onError: (error) => {
                         console.error("Agent - streamText error:", error);
-                    }
+                    },
+                    stopWhen: stepCountIs(2),
                 });
 
                 // Convert the AI SDK stream to the format expected by the frontend

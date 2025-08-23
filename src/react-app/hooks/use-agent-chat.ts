@@ -289,6 +289,6 @@ export function useAgentChat<State = unknown>(
                     type: MessageType.CF_AGENT_CHAT_MESSAGES
                 })
             );
-        }
+        },
     };
 }

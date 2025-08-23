@@ -100,6 +100,7 @@ export function AppSidebar() {
                         <DropdownMenuItem
                           onSelect={(e) => {
                             e.preventDefault();
+                            e.stopPropagation();
                             deleteChatMutation.mutate({
                               chatId: chat.id,
                             });
