@@ -79,40 +79,56 @@ export function AppSidebar() {
           {chats?.map((chat) => {
             return (
               <SidebarMenuItem key={chat.id}>
-                <Link to={"/chat/" + chat.id}>
-                  <SidebarMenuButton
-                    className="flex items-center justify-between group/chat"
-                    isActive={chatId === chat.id}
+                <SidebarMenuButton
+                  className="flex items-center justify-between group/chat"
+                  isActive={chatId === chat.id}
+                >
+                  <Link
+                    to={"/chat/" + chat.id}
+                    className="flex-1 truncate text-left"
+                    onClick={(e) => {
+                      // Only navigate when clicking the text area, not the dropdown
+                      e.stopPropagation();
+                    }}
                   >
                     <span className="truncate">{chat.name}</span>
+                  </Link>
 
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-fit" align="start">
-                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                          <PencilIcon />
-                          Rename
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onSelect={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            deleteChatMutation.mutate({
-                              chatId: chat.id,
-                            });
-                          }}
-                        >
-                          <TrashIcon />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </SidebarMenuButton>
-                </Link>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="opacity-0 group-hover/chat:opacity-100 transition-opacity duration-200"
+                        onClick={(e) => {
+                          // Prevent the parent link from being triggered
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
+                      >
+                        <MoreHorizontal />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-fit" align="start">
+                      <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                        <PencilIcon />
+                        Rename
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onSelect={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          deleteChatMutation.mutate({
+                            chatId: chat.id,
+                          });
+                        }}
+                      >
+                        <TrashIcon />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </SidebarMenuButton>
               </SidebarMenuItem>
             );
           })}
