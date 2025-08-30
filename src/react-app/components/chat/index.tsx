@@ -83,6 +83,32 @@ export const Chat = ({
     currentChat?.model || DEFUALT_MODEL
   );
   const [agentInput, setAgentInput] = useState("");
+
+  // Handle model change with database update
+  const handleModelChange = async (newModel: string) => {
+    setSelectedModel(newModel);
+
+    // Update database if there's an existing chat
+    if (currentChat) {
+      try {
+        await updateChatMutation.mutateAsync({
+          chatId: currentChat.id,
+          model: newModel,
+        });
+      } catch (error) {
+        console.error("Failed to update chat model:", error);
+        // Revert the local state if database update fails
+        setSelectedModel(selectedModel);
+      }
+    }
+  };
+
+  // Sync selectedModel with currentChat when chat changes
+  useEffect(() => {
+    if (currentChat?.model && currentChat.model !== selectedModel) {
+      setSelectedModel(currentChat.model);
+    }
+  }, [currentChat?.model]);
   const ensureChatExists = async (chatId: string, input: string) => {
     if (!currentChat) {
       const newChat = await createNewChatMutation.mutateAsync({
@@ -139,7 +165,7 @@ export const Chat = ({
           isLoading={status === "streaming"}
           pendingToolCallConfirmation={pendingToolCallConfirmation}
           selectedModel={selectedModel}
-          handleModelChange={setSelectedModel}
+          handleModelChange={handleModelChange}
         />
       </div>
     </div>
