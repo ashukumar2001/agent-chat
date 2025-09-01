@@ -6,14 +6,14 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
+  SidebarMenuSkeleton,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { useChats } from "@/hooks/use-chats";
 import { authClient } from "@/lib/auth-client";
 import {
   EditIcon,
   LogInIcon,
-  LogOutIcon,
   MoreHorizontal,
   PencilIcon,
   TrashIcon,
@@ -24,7 +24,6 @@ import {
 import { Button } from "../ui/button";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useChatSession } from "@/hooks/use-chat-session";
-import { Separator } from "../ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import {
   DropdownMenu,
@@ -36,102 +35,102 @@ import { SettingsDialog } from "@/components/settings";
 import { useState } from "react";
 
 export function AppSidebar() {
+  const { state: sidebarState } = useSidebar();
   const { data: userSessionData } = authClient.useSession();
-  const { chats, createNewChatMutation, deleteChatMutation } = useChats(
-    userSessionData?.user?.id
-  );
+  const { chats, createNewChatMutation, deleteChatMutation, isLoading } =
+    useChats(userSessionData?.user?.id);
   const navigate = useNavigate();
   const { chatId } = useChatSession();
   const [settingsOpen, setSettingsOpen] = useState(false);
   return (
-    <Sidebar>
+    <Sidebar collapsible="icon">
       <SidebarHeader className="justify-between p-2 flex-row items-center">
-        <h1 className="text-xl font-semibold">Agent Chat</h1>
-        <SidebarTrigger size="lg" />
+        <h1 className="text-xl font-semibold">
+          {sidebarState === "collapsed" ? "AC" : "AgentChat"}
+        </h1>
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu className="p-2">
           <SidebarMenuButton
-            className="w-full justify-start"
+            className="w-full justify-start flex-nowrap"
             onClick={() => {
-              createNewChatMutation.mutate(
-                {
-                  name: "New Chat",
-                },
-                {
-                  onSuccess: (data) => {
-                    if (data.id) {
-                      navigate({
-                        to: "/chat/$chatId",
-                        params: {
-                          chatId: data.id,
-                        },
-                      });
-                    }
-                  },
-                }
-              );
+              createNewChatMutation.mutate({
+                name: "New Chat",
+              });
             }}
           >
             <EditIcon />
-            New Chat
+            <span className="group-data-[state=collapsed]:hidden">
+              New Chat
+            </span>
           </SidebarMenuButton>
-          {chats?.map((chat) => {
-            return (
-              <SidebarMenuItem key={chat.id}>
-                <SidebarMenuButton
-                  className="flex items-center justify-between group/chat"
-                  isActive={chatId === chat.id}
-                >
-                  <Link
-                    to={"/chat/" + chat.id}
-                    className="flex-1 truncate text-left"
-                    onClick={(e) => {
-                      // Only navigate when clicking the text area, not the dropdown
-                      e.stopPropagation();
-                    }}
+          <div className="group-data-[state=collapsed]:hidden ">
+            {chats?.map((chat) => {
+              return (
+                <SidebarMenuItem key={chat.id}>
+                  <SidebarMenuButton
+                    className="flex items-center justify-between group/chat"
+                    isActive={chatId === chat.id}
                   >
-                    <span className="truncate">{chat.name}</span>
-                  </Link>
+                    <Link
+                      to={"/chat/" + chat.id}
+                      className="flex-1 truncate text-left"
+                      onClick={(e) => {
+                        // Only navigate when clicking the text area, not the dropdown
+                        e.stopPropagation();
+                      }}
+                    >
+                      <span className="truncate">{chat.name}</span>
+                    </Link>
 
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="opacity-0 group-hover/chat:opacity-100 transition-opacity duration-200"
-                        onClick={(e) => {
-                          // Prevent the parent link from being triggered
-                          e.preventDefault();
-                          e.stopPropagation();
-                        }}
-                      >
-                        <MoreHorizontal />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-fit" align="start">
-                      <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                        <PencilIcon />
-                        Rename
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onSelect={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          deleteChatMutation.mutate({
-                            chatId: chat.id,
-                          });
-                        }}
-                      >
-                        <TrashIcon />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            );
-          })}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="opacity-0 group-hover/chat:opacity-100 transition-opacity duration-200"
+                          onClick={(e) => {
+                            // Prevent the parent link from being triggered
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }}
+                        >
+                          <MoreHorizontal />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-fit" align="start">
+                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                          <PencilIcon />
+                          Rename
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            deleteChatMutation.mutate({
+                              chatId: chat.id,
+                            });
+                          }}
+                        >
+                          <TrashIcon />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
+            {isLoading && (
+              <div className="space-y-2">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <SidebarMenuItem key={index}>
+                    <SidebarMenuSkeleton className="w-full h-8 animate-pulse rounded-md" />
+                  </SidebarMenuItem>
+                ))}
+              </div>
+            )}
+          </div>
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="border-t">
@@ -141,7 +140,7 @@ export function AppSidebar() {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="justify-start px-3 h-[56px] w-full"
+                  className="justify-start px-3 h-[56px] w-full group-data-[state=collapsed]:justify-center"
                 >
                   <Avatar>
                     <AvatarImage src={userSessionData?.user?.image!} />
@@ -149,7 +148,7 @@ export function AppSidebar() {
                       {userSessionData?.user?.name?.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex flex-col items-start">
+                  <div className="flex flex-col items-start group-data-[state=collapsed]:hidden w-full">
                     <p className="text-sm font-medium">
                       {userSessionData?.user?.name}
                     </p>
@@ -177,28 +176,17 @@ export function AppSidebar() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Separator />
-            <Button
-              variant="ghost"
-              className="text-red-400 hover:text-red-400 hover:bg-red-400/10"
-              onClick={() => {
-                authClient.signOut();
-              }}
-            >
-              <LogOutIcon />
-              &nbsp;Logout
-            </Button>
           </>
         ) : (
           <Button
             variant="ghost"
-            className="justify-start"
+            className="justify-center"
             onClick={() => {
               authClient.signIn.social({ provider: "github" });
             }}
           >
             <LogInIcon />
-            &nbsp;Login
+            <span className="group-data-[state=collapsed]:hidden">Login</span>
           </Button>
         )}
       </SidebarFooter>

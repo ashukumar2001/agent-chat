@@ -10,8 +10,9 @@ export function useChats(userId?: string) {
     );
 
     const createNewChatMutation = useMutation(trpc.chats.createNewChat.mutationOptions({
-        onSuccess: () => {
+        onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: trpc.chats.chats.queryKey() });
+            navigate({ to: "/chat/$chatId", params: { chatId: data.id } });
         },
         onError: (error) => {
             toast.error(error.message);
