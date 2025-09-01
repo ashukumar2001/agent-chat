@@ -17,12 +17,9 @@ import {
   MoreHorizontal,
   PencilIcon,
   TrashIcon,
-  Settings,
-  User,
-  Key,
 } from "lucide-react";
 import { Button } from "../ui/button";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useChatSession } from "@/hooks/use-chat-session";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import {
@@ -39,7 +36,6 @@ export function AppSidebar() {
   const { data: userSessionData } = authClient.useSession();
   const { chats, createNewChatMutation, deleteChatMutation, isLoading } =
     useChats(userSessionData?.user?.id);
-  const navigate = useNavigate();
   const { chatId } = useChatSession();
   const [settingsOpen, setSettingsOpen] = useState(false);
   return (
@@ -136,46 +132,29 @@ export function AppSidebar() {
       <SidebarFooter className="border-t">
         {!!userSessionData?.user ? (
           <>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="justify-start px-3 h-[56px] w-full group-data-[state=collapsed]:justify-center"
+            <Button
+              variant="ghost"
+              className="justify-start px-3 h-[56px] w-full group-data-[state=collapsed]:justify-center"
+              onClick={() => setSettingsOpen(true)}
+            >
+              <Avatar>
+                <AvatarImage src={userSessionData?.user?.image!} />
+                <AvatarFallback>
+                  {userSessionData?.user?.name?.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col items-start group-data-[state=collapsed]:hidden w-full">
+                <p className="text-sm font-medium">
+                  {userSessionData?.user?.name}
+                </p>
+                <p
+                  title={userSessionData?.user?.email}
+                  className="text-xs text-muted-foreground truncate max-w-[180px]"
                 >
-                  <Avatar>
-                    <AvatarImage src={userSessionData?.user?.image!} />
-                    <AvatarFallback>
-                      {userSessionData?.user?.name?.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col items-start group-data-[state=collapsed]:hidden w-full">
-                    <p className="text-sm font-medium">
-                      {userSessionData?.user?.name}
-                    </p>
-                    <p
-                      title={userSessionData?.user?.email}
-                      className="text-xs text-muted-foreground truncate max-w-[180px]"
-                    >
-                      {userSessionData?.user?.email}
-                    </p>
-                  </div>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="center">
-                <DropdownMenuItem onSelect={() => setSettingsOpen(true)}>
-                  <Settings />
-                  Settings
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => navigate({ to: "/profile" })}>
-                  <User />
-                  Profile
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                  <Key />
-                  Keys
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  {userSessionData?.user?.email}
+                </p>
+              </div>
+            </Button>
           </>
         ) : (
           <Button

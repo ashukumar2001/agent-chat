@@ -20,8 +20,8 @@ export const ApiKeysSettings: React.FC = () => {
           queryKey: trpc.userSettings.getUserApiKeysStatus.queryKey(),
         });
       },
-      onError: () => {
-        toast.error("Failed to save API key");
+      onError: (error) => {
+        toast.error(error.message || "Failed to save API key");
       },
     })
   );
