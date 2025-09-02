@@ -29,7 +29,6 @@ const getDbConfiguration = () => {
     }
 };
 const dbConfig = getDbConfiguration();
-console.log(dbConfig);
 export default {
     out: "./src/worker/drizzle",
     schema: "./src/worker/db/schema.ts",

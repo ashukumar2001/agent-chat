@@ -6,8 +6,11 @@ import { toast } from "sonner";
 export function useChats(userId?: string) {
     const navigate = useNavigate();
     const { data: chats, isLoading, } = useQuery(
-        trpc.chats.chats.queryOptions(undefined, { enabled: !!userId, }),
+        trpc.chats.chats.queryOptions(undefined, { enabled: !!userId }),
     );
+
+    // Return empty array when user is logged out (userId is null/undefined)
+    const processedChats = userId ? chats : [];
 
     const createNewChatMutation = useMutation(trpc.chats.createNewChat.mutationOptions({
         onSuccess: (data) => {
@@ -36,8 +39,8 @@ export function useChats(userId?: string) {
     }));
 
     const getChatById = (id: string) => {
-        return chats?.find(chat => chat.id === id);
+        return processedChats?.find(chat => chat.id === id);
     }
 
-    return { chats, isLoading, createNewChatMutation, deleteChatMutation, getChatById, updateChatMutation }
+    return { chats: processedChats, isLoading, createNewChatMutation, deleteChatMutation, getChatById, updateChatMutation }
 };

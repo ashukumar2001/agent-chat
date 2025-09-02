@@ -75,7 +75,11 @@ export const ProfilePage = () => {
             <p className="text-muted-foreground text-center mb-6">
               You need to be signed in to view your profile.
             </p>
-            <Button onClick={() => navigate({ to: "/" })}>Go to Home</Button>
+            <Button
+              onClick={() => authClient.signIn.social({ provider: "github" })}
+            >
+              Sign In
+            </Button>
           </CardContent>
         </Card>
       </div>

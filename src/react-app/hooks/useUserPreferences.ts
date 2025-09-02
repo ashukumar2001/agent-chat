@@ -2,11 +2,14 @@ import { trpc } from "@/lib/trpc-client";
 import { useQuery } from "@tanstack/react-query";
 import { MODELS } from "@worker/lib/models";
 import { useMemo } from "react";
+import { useSession } from "./useSession";
 
 const useUserPreferences = () => {
-    const { data: userApiKeysStatus, isLoading: isLoadingUserApiKeysStatus } = useQuery(
-        trpc.userSettings.getUserApiKeysStatus.queryOptions()
+    const { user } = useSession();
+    const { data: userApiKeysStatusData, isLoading: isLoadingUserApiKeysStatus } = useQuery(
+        trpc.userSettings.getUserApiKeysStatus.queryOptions(undefined, { enabled: !!user })
     );
+    const userApiKeysStatus = !!user ? userApiKeysStatusData : {};
     const models = useMemo(() => {
         if (userApiKeysStatus) {
             return MODELS.filter((model) => {

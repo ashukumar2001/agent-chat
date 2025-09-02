@@ -55,7 +55,8 @@ export const Chat = ({
       });
     }
   };
-  const { createNewChatMutation, getChatById, updateChatMutation } = useChats();
+  const { createNewChatMutation, getChatById, updateChatMutation } =
+    useChats(userId);
 
   const pendingToolCallConfirmation = useMemo(
     () =>

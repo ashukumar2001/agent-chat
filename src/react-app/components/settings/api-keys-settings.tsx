@@ -10,18 +10,24 @@ import { toast } from "sonner";
 import useUserPreferences from "@/hooks/useUserPreferences";
 
 export const ApiKeysSettings: React.FC = () => {
+  const [selectedProvider, setSelectedProvider] = useState<string>(
+    PROVIDERS[0].id
+  );
+  const [currentKeyInput, setCurrentKeyInput] = useState<string>("");
+  const [hasChanges, setHasChanges] = useState(false);
   const queryClient = useQueryClient();
   const { userApiKeysStatus } = useUserPreferences();
   const { mutate: setUserApiKey } = useMutation(
     trpc.userSettings.setUserApiKey.mutationOptions({
       onSuccess: () => {
-        toast.success("API key saved");
         queryClient.invalidateQueries({
           queryKey: trpc.userSettings.getUserApiKeysStatus.queryKey(),
         });
+        toast.success("API key saved");
       },
       onError: (error) => {
         toast.error(error.message || "Failed to save API key");
+        setCurrentKeyInput("");
       },
     })
   );
@@ -38,12 +44,6 @@ export const ApiKeysSettings: React.FC = () => {
       },
     })
   );
-  const [selectedProvider, setSelectedProvider] = useState<string>(
-    PROVIDERS[0].id
-  );
-  const [currentKeyInput, setCurrentKeyInput] = useState<string>("");
-  const [showKey, setShowKey] = useState<boolean>(false);
-  const [hasChanges, setHasChanges] = useState(false);
 
   // Update input field when provider selection changes
   useEffect(() => {
@@ -56,7 +56,6 @@ export const ApiKeysSettings: React.FC = () => {
 
   const handleProviderSelect = (providerId: string) => {
     setSelectedProvider(providerId);
-    setShowKey(false);
   };
 
   const handleKeyInputChange = (value: string) => {
@@ -162,7 +161,7 @@ export const ApiKeysSettings: React.FC = () => {
           <div className="space-y-3">
             <div className="relative">
               <Input
-                type={showKey ? "text" : "password"}
+                type="password"
                 placeholder={selectedProviderData.placeholder}
                 value={currentKeyInput}
                 onChange={(e) => handleKeyInputChange(e.target.value)}
