@@ -41,6 +41,7 @@ export const ChatInput = ({
           placeholder="Ask me anything..."
           disabled={pendingToolCallConfirmation}
           onChange={handleInputChange}
+          autoFocus
         />
         <PromptInputActions className="justify-between mt-4">
           <div>
