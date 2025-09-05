@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { SidebarTrigger } from "../ui/sidebar";
 import { Button } from "../ui/button";
 import { Palette, Key } from "lucide-react";
 import { SettingsDialog } from "@/components/settings";
@@ -19,7 +18,6 @@ export const AppSidebarTrigger = () => {
     <>
       <header className="flex h-12 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
         <div className="flex items-center justify-between gap-2 px-4 w-full">
-          <SidebarTrigger className="-ml-1" />
           <div className="flex items-center gap-1 ml-auto">
             <Button
               variant="ghost"

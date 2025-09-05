@@ -7,12 +7,11 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSkeleton,
-  useSidebar,
 } from "@/components/ui/sidebar";
 import { useChats } from "@/hooks/use-chats";
 import { authClient } from "@/lib/auth-client";
 import {
-  EditIcon,
+  Loader2Icon,
   LogInIcon,
   MoreHorizontal,
   PencilIcon,
@@ -30,37 +29,37 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SettingsDialog } from "@/components/settings";
 import { useState } from "react";
+import { TextMorph } from "../motion-primitves/text-morph";
 
 export function AppSidebar() {
-  const { state: sidebarState } = useSidebar();
   const { data: userSessionData } = authClient.useSession();
   const { chats, createNewChatMutation, deleteChatMutation, isLoading } =
     useChats(userSessionData?.user?.id);
   const { chatId } = useChatSession();
   const [settingsOpen, setSettingsOpen] = useState(false);
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="justify-between p-2 flex-row items-center">
-        <h1 className="text-xl font-semibold">
-          {sidebarState === "collapsed" ? "AC" : "AgentChat"}
+    <Sidebar collapsible="offcanvas">
+      <SidebarHeader className="flex-col flex space-y-3 p-3">
+        <h1 className="text-xl group-data-[state=collapsed]:opacity-0 transition-all group-data-[state=expanded]:opacity-100 group-data-[state=expanded]:delay-150 text-center">
+          Eddy
         </h1>
+        <Button
+          onClick={() => {
+            createNewChatMutation.mutate({
+              name: "New Chat",
+            });
+          }}
+        >
+          <TextMorph transition={{ duration: 0.1 }}>
+            {createNewChatMutation.isPending
+              ? "Creating new chat..."
+              : "New chat"}
+          </TextMorph>
+        </Button>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarMenu className="p-2">
-          <SidebarMenuButton
-            className="w-full justify-start flex-nowrap"
-            onClick={() => {
-              createNewChatMutation.mutate({
-                name: "New Chat",
-              });
-            }}
-          >
-            <EditIcon />
-            <span className="group-data-[state=collapsed]:hidden">
-              New Chat
-            </span>
-          </SidebarMenuButton>
-          <div className="group-data-[state=collapsed]:hidden ">
+        <SidebarMenu className="p-3">
+          <div>
             {chats?.map((chat) => {
               return (
                 <SidebarMenuItem key={chat.id}>
@@ -78,7 +77,6 @@ export function AppSidebar() {
                     >
                       <span className="truncate">{chat.name}</span>
                     </Link>
-
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -134,7 +132,7 @@ export function AppSidebar() {
           <>
             <Button
               variant="ghost"
-              className="justify-start px-3 h-[56px] w-full group-data-[state=collapsed]:justify-center"
+              className="justify-start px-3 h-[56px] w-full"
               onClick={() => setSettingsOpen(true)}
             >
               <Avatar>
@@ -143,7 +141,7 @@ export function AppSidebar() {
                   {userSessionData?.user?.name?.charAt(0)}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex flex-col items-start group-data-[state=collapsed]:hidden w-full">
+              <div className="flex flex-col items-start w-full">
                 <p className="text-sm font-medium">
                   {userSessionData?.user?.name}
                 </p>
@@ -165,7 +163,7 @@ export function AppSidebar() {
             }}
           >
             <LogInIcon />
-            <span className="group-data-[state=collapsed]:hidden">Login</span>
+            <span>Login</span>
           </Button>
         )}
       </SidebarFooter>
