@@ -84,6 +84,26 @@ export const Chat = ({
     currentChat?.model || DEFUALT_MODEL
   );
   const [agentInput, setAgentInput] = useState("");
+
+  const handleModelChange = async (newModel: string) => {
+    setSelectedModel(newModel);
+
+    // Update the model in the database if chat exists
+    if (currentChat) {
+      try {
+        await updateChatMutation.mutateAsync({
+          chatId: currentChat.id,
+          model: newModel,
+        });
+      } catch (error) {
+        console.error("Failed to update model in database:", error);
+        toast.error("Failed to update model", {
+          description: "There was an error saving your model selection",
+          closeButton: true,
+        });
+      }
+    }
+  };
   const ensureChatExists = async (chatId: string, input: string) => {
     if (!currentChat) {
       const newChat = await createNewChatMutation.mutateAsync({
@@ -123,6 +143,15 @@ export const Chat = ({
   useEffect(() => {
     console.log(agentMessages);
   }, [agentMessages]);
+
+  // Update selectedModel when currentChat changes (e.g., navigating to different chat)
+  useEffect(() => {
+    if (currentChat?.model) {
+      setSelectedModel(currentChat.model);
+    } else {
+      setSelectedModel(DEFUALT_MODEL);
+    }
+  }, [currentChat?.model]);
   return (
     <div className="@container/main relative flex h-full flex-col items-center justify-end md:justify-center">
       <ChatBox
@@ -140,7 +169,7 @@ export const Chat = ({
           isLoading={status === "streaming"}
           pendingToolCallConfirmation={pendingToolCallConfirmation}
           selectedModel={selectedModel}
-          handleModelChange={setSelectedModel}
+          handleModelChange={handleModelChange}
         />
       </div>
     </div>
