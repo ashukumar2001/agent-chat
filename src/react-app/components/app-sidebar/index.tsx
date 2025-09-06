@@ -2,8 +2,11 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroup,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSkeleton,
@@ -39,7 +42,7 @@ export function AppSidebar() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   return (
     <Sidebar collapsible="offcanvas">
-      <SidebarHeader className="flex-col flex space-y-3 p-3">
+      <SidebarHeader className="flex-col flex space-y-3 p-4">
         <h1 className="text-xl group-data-[state=collapsed]:opacity-0 transition-all group-data-[state=expanded]:opacity-100 group-data-[state=expanded]:delay-150 text-center">
           Eddy
         </h1>
@@ -58,60 +61,45 @@ export function AppSidebar() {
         </Button>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarMenu className="p-3">
-          <div>
+        <SidebarGroup>
+          <SidebarGroupLabel>Today</SidebarGroupLabel>
+          <SidebarMenu>
             {chats?.map((chat) => {
               return (
                 <SidebarMenuItem key={chat.id}>
                   <SidebarMenuButton
                     className="flex items-center justify-between group/chat"
                     isActive={chatId === chat.id}
+                    asChild
                   >
-                    <Link
-                      to={"/chat/" + chat.id}
-                      className="flex-1 truncate text-left"
-                      onClick={(e) => {
-                        // Only navigate when clicking the text area, not the dropdown
-                        e.stopPropagation();
-                      }}
-                    >
+                    <Link to={"/chat/" + chat.id} className="flex-1 text-left">
                       <span className="truncate">{chat.name}</span>
                     </Link>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="opacity-0 group-hover/chat:opacity-100 transition-opacity duration-200"
-                          onClick={(e) => {
-                            // Prevent the parent link from being triggered
-                            e.preventDefault();
-                            e.stopPropagation();
-                          }}
-                        >
-                          <MoreHorizontal />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-fit" align="start">
-                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                          <PencilIcon />
-                          Rename
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onSelect={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            deleteChatMutation.mutate({
-                              chatId: chat.id,
-                            });
-                          }}
-                        >
-                          <TrashIcon />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
                   </SidebarMenuButton>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <SidebarMenuAction showOnHover>
+                        <MoreHorizontal />
+                        <span className="sr-only">More</span>
+                      </SidebarMenuAction>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-fit" align="start">
+                      <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                        <PencilIcon />
+                        <span>Rename</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onSelect={(e) => {
+                          deleteChatMutation.mutate({
+                            chatId: chat.id,
+                          });
+                        }}
+                      >
+                        <TrashIcon />
+                        <span>Delete</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </SidebarMenuItem>
               );
             })}
@@ -124,8 +112,8 @@ export function AppSidebar() {
                 ))}
               </div>
             )}
-          </div>
-        </SidebarMenu>
+          </SidebarMenu>
+        </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="border-t">
         {!!userSessionData?.user ? (
