@@ -16,6 +16,7 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { MessageType, OutgoingMessage } from "../../react-app/types/ai-types";
 import { getUserKey } from "../lib/user-keys";
 import { tools } from "../lib/tools";
+import { cleanMessagesForReasoning } from "../lib/utils";
 
 const decoder = new TextDecoder();
 
@@ -237,7 +238,13 @@ export class MyChatAgent extends Agent<Env> {
 
                 }
                 const toolsEnabled = modelConfig.tools === true;
-                const processedMessages = convertToModelMessages(messages);
+
+                // Filter reasoning content for non-thinking models to prevent API errors
+                const filteredMessages = modelConfig.reasoning ? messages : cleanMessagesForReasoning(messages);
+
+                const processedMessages = convertToModelMessages(filteredMessages, {
+                    ignoreIncompleteToolCalls: true,
+                });
                 const result = streamText({
                     model: modelInstance!,
                     system: DEFAULT_SYSTEM_PROMPT,
@@ -248,13 +255,23 @@ export class MyChatAgent extends Agent<Env> {
                         console.error("Agent - streamText error:", error);
                     },
                     stopWhen: stepCountIs(2),
+                    providerOptions: {
+                        ...(modelConfig.reasoning && {
+                            google: {
+                                thinkingConfig: {
+                                    thinkingBudget: 2000,
+                                    includeThoughts: true,
+                                },
+                            },
+                        }),
+                    }
                 });
 
                 // Convert the AI SDK stream to the format expected by the frontend
                 const stream = createUIMessageStream({
                     originalMessages: messages,
                     execute: ({ writer }) => {
-                        writer.merge(result.toUIMessageStream());
+                        writer.merge(result.toUIMessageStream({ sendReasoning: modelConfig.reasoning }));
                     },
                     onError: (error) => {
                         console.error("Error while streaming: ", error)
@@ -263,7 +280,7 @@ export class MyChatAgent extends Agent<Env> {
                     onFinish: options?.onFinish
                 });
 
-                const resp = createUIMessageStreamResponse({ stream });
+                const resp = createUIMessageStreamResponse({ stream, });
                 return resp;
             } catch (error) {
                 console.error("Agent onChatMessage - caught error:", error);

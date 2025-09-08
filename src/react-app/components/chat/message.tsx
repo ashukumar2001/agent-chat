@@ -15,12 +15,17 @@ type MessageProps = {
     toolCallId: string;
     result: any;
   }) => void;
+  status: "streaming" | "ready" | "submitted" | "error";
+  isLastMessage: boolean;
 };
 export const Message = ({
   children,
   variant,
   parts,
   addToolResult,
+  id,
+  status,
+  isLastMessage,
 }: MessageProps) => {
   const [copied, setCopied] = useState(false);
   const isAssistant = variant === "assistant";
@@ -38,6 +43,9 @@ export const Message = ({
       addToolResult={addToolResult}
       copied={copied}
       copyToClipboard={copyToClipboard}
+      id={id}
+      status={status}
+      isLastMessage={isLastMessage}
     />
   ) : (
     <UserMessage

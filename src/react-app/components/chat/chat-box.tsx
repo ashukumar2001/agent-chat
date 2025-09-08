@@ -21,6 +21,8 @@ export const ChatBox = ({ messages, status, addToolResult }: ChatBoxProps) => {
   const lastMessage =
     messages?.length > 0 ? messages[messages.length - 1] : null;
 
+  console.log({ lastMessage });
+
   return (
     <div className="relative flex h-full w-full flex-col items-center overflow-x-hidden overflow-y-auto">
       <ChatContainer
@@ -46,18 +48,11 @@ export const ChatBox = ({ messages, status, addToolResult }: ChatBoxProps) => {
               children={textContent}
               variant={message.role}
               parts={message.parts}
+              status={status}
+              isLastMessage={message.id === lastMessage?.id}
             />
           );
         })}
-        {status === "submitted" &&
-          lastMessage &&
-          lastMessage.role === "user" && (
-            <div className="group flex w-full max-w-3xl items-center mx-auto px-6">
-              <TextShimmerWave className="text-sm" duration={1}>
-                Thinking...
-              </TextShimmerWave>
-            </div>
-          )}
         {status === "streaming" &&
           lastMessage &&
           lastMessage.role === "assistant" &&

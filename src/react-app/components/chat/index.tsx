@@ -156,7 +156,7 @@ export const Chat = ({
     <div className="@container/main relative flex h-full flex-col items-center justify-end md:justify-center">
       <ChatBox
         key={chatId}
-        messages={agentMessages as any}
+        messages={agentMessages}
         addToolResult={addToolResult}
         status={status}
       />

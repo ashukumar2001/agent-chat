@@ -13,13 +13,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useChats } from "@/hooks/use-chats";
 import { authClient } from "@/lib/auth-client";
-import {
-  Loader2Icon,
-  LogInIcon,
-  MoreHorizontal,
-  PencilIcon,
-  TrashIcon,
-} from "lucide-react";
+import { LogInIcon, MoreHorizontal, PencilIcon, TrashIcon } from "lucide-react";
 import { Button } from "../ui/button";
 import { Link } from "@tanstack/react-router";
 import { useChatSession } from "@/hooks/use-chat-session";
@@ -42,7 +36,7 @@ export function AppSidebar() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   return (
     <Sidebar collapsible="offcanvas">
-      <SidebarHeader className="flex-col flex space-y-3 p-4">
+      <SidebarHeader className="flex-col flex space-y-3">
         <h1 className="text-xl group-data-[state=collapsed]:opacity-0 transition-all group-data-[state=expanded]:opacity-100 group-data-[state=expanded]:delay-150 text-center">
           Eddy
         </h1>
@@ -89,7 +83,7 @@ export function AppSidebar() {
                         <span>Rename</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onSelect={(e) => {
+                        onSelect={() => {
                           deleteChatMutation.mutate({
                             chatId: chat.id,
                           });

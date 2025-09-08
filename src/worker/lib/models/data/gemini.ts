@@ -140,15 +140,15 @@ const geminiModels: ModelConfig[] = [
             openproviders("gemini-2.0-flash-lite-preview-02-05", undefined, apiKey),
     },
     {
-        id: "gemini-2.5-pro-exp-03-25",
-        name: "Gemini 2.5 Flash Preview",
+        id: "gemini-2.5-flash",
+        name: "Gemini 2.5 Flash",
         provider: "Google",
         providerId: "google",
         modelFamily: "Gemini",
         baseProviderId: "google",
         description:
-            "Preview of the next-gen Gemini Flash with multimodal support.",
-        tags: ["preview", "next-gen", "multimodal", "experimental"],
+            "The next-gen Gemini Flash with multimodal support.",
+        tags: ["next-gen", "multimodal"],
         contextWindow: 1000000,
         inputCost: 0.1,
         outputCost: 0.4,
@@ -165,7 +165,7 @@ const geminiModels: ModelConfig[] = [
         modelPage: "https://deepmind.google/technologies/gemini",
         icon: "gemini",
         apiSdk: (apiKey?: string) =>
-            openproviders("gemini-2.5-pro-exp-03-25", undefined, apiKey),
+            openproviders("gemini-2.5-flash", undefined, apiKey),
     },
     {
         id: "gemma-3-27b-it",

@@ -81,14 +81,14 @@ export function openproviders<T extends SupportedModel>(
         if (apiKey) {
             const googleProvider = createGoogleGenerativeAI({
                 ...(settings as GoogleGenerativeAIProviderSettings),
-                apiKey
+                apiKey,
             })
             return googleProvider(
                 modelId as GeminiModel,
             )
         }
         return google(
-            modelId as GeminiModel
+            modelId as GeminiModel,
         )
     }
 

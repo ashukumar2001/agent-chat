@@ -8,11 +8,17 @@ import { cn } from "@/lib/utils";
 import { Check, Copy, Trash } from "lucide-react";
 import { type UIMessage as MessageType } from "ai";
 import { Tool, ToolPart } from "../ui/tool";
+import {
+  Reasoning,
+  ReasoningContent,
+  ReasoningTrigger,
+} from "../ai-elements/reasoning";
 type AssistantMessageProps = {
   children: string;
   copied: boolean;
   copyToClipboard: () => void;
   parts: MessageType["parts"];
+  id: string;
   addToolResult: ({
     toolCallId,
     result,
@@ -20,19 +26,25 @@ type AssistantMessageProps = {
     toolCallId: string;
     result: any;
   }) => void;
+  status: "streaming" | "ready" | "submitted" | "error";
+  isLastMessage: boolean;
 };
 export const AssistantMessage = ({
   children,
   copied,
   copyToClipboard,
   parts,
+  id,
+  status,
+  isLastMessage,
 }: AssistantMessageProps) => {
   const isContentEmpty = children !== null && children !== "";
+  console.log({ isLastMessage, messageId: id, status });
   return (
     <Message>
       <div className="group flex flex-col w-full max-w-3xl flex-1 items-start gap-4 px-6 pb-2 mb-2 mx-auto">
         <div className={cn("flex min-w-full flex-col gap-2")}>
-          {parts?.map((part) => {
+          {parts?.map((part, idx) => {
             // In AI SDK v5, handle tool-call parts
             if (part.type.startsWith("tool-")) {
               return <Tool toolPart={part as ToolPart} />;
@@ -47,6 +59,20 @@ export const AssistantMessage = ({
                 >
                   {part.text}
                 </MessageContent>
+              );
+            } else if (part.type === "reasoning") {
+              return (
+                <Reasoning
+                  key={`${id}-${idx}`}
+                  isStreaming={
+                    status === "streaming" &&
+                    idx === parts.length - 1 &&
+                    isLastMessage
+                  }
+                >
+                  <ReasoningTrigger />
+                  <ReasoningContent>{part.text}</ReasoningContent>
+                </Reasoning>
               );
             }
             return;
