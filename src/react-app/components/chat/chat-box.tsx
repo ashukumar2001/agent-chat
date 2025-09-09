@@ -3,7 +3,7 @@ import { ChatContainer } from "@/components/ui/chat-container";
 import { Message } from "./message";
 import { useRef } from "react";
 import { ScrollButton } from "@/components/ui/scroll-button";
-import { TextShimmerWave } from "../motion-primitves/text-shimmer-wave";
+import { Loader } from "../ai-elements/loader";
 type ChatBoxProps = {
   messages: UIMessage[];
   status: "streaming" | "ready" | "submitted" | "error";
@@ -63,9 +63,7 @@ export const ChatBox = ({ messages, status, addToolResult }: ChatBoxProps) => {
               .filter((part) => part.type === "text")
               .every((part) => part.text === "")) && (
             <div className="group flex w-full max-w-3xl items-center mx-auto px-6">
-              <TextShimmerWave className="text-sm" duration={1}>
-                Generating results...
-              </TextShimmerWave>
+              <Loader />
             </div>
           )}
       </ChatContainer>
