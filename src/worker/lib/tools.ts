@@ -1,13 +1,8 @@
 import { tool } from "ai";
 import { z } from "zod";
 const getWeatherInformation = tool({
-    description: "Show the weather in a given city to the user",
+    description: "Show the weather in a given city to the user.",
     inputSchema: z.object({ city: z.string() }),
-    execute: async ({ city }: { city: string }) => {
-        // sleep for 3 seconds
-        await new Promise((resolve) => setTimeout(resolve, 10000));
-        return `The weather in ${city} is sunny 😁`;
-    }
 });
 
 
@@ -16,6 +11,7 @@ const getLocalTime = tool({
     inputSchema: z.object({ location: z.string() }),
     execute: async ({ location }) => {
         console.log("Getting local time for ", location);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
         return "12:01 PM"
     }
 });
@@ -25,6 +21,12 @@ export const tools = {
     getWeatherInformation
 }
 
-export const executions = {};
+export const executions = {
+    getWeatherInformation: async ({ city }: { city: string }) => {
+        // sleep for 3 seconds
+        await new Promise((resolve) => setTimeout(resolve, 10000));
+        return `The weather in ${city} is sunny 😁`;
+    }
+};
 
 export const toolsRequiringConfirmation = Object.keys(executions) as (keyof typeof tools)[];

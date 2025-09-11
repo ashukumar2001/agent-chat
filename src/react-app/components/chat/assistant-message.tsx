@@ -2,17 +2,20 @@ import {
   Message,
   MessageAction,
   MessageActions,
-  MessageContent,
 } from "@/components/ui/message";
 import { cn } from "@/lib/utils";
 import { Check, Copy, Trash } from "lucide-react";
-import { type UIMessage as MessageType } from "ai";
+import { getToolName, isToolUIPart, type UIMessage as MessageType } from "ai";
 import { Tool, ToolPart } from "../ui/tool";
 import {
   Reasoning,
   ReasoningContent,
   ReasoningTrigger,
 } from "../ai-elements/reasoning";
+import { Button } from "../ui/button";
+import { Response } from "../ai-elements/response";
+import { APPROVAL } from "@worker/lib/utils";
+import { tools, toolsRequiringConfirmation } from "@worker/lib/tools";
 type AssistantMessageProps = {
   children: string;
   copied: boolean;
@@ -37,28 +40,78 @@ export const AssistantMessage = ({
   id,
   status,
   isLastMessage,
+  addToolResult,
 }: AssistantMessageProps) => {
   const isContentEmpty = children !== null && children !== "";
-  console.log({ isLastMessage, messageId: id, status });
+  const toolCallStatusList = parts?.filter(
+    (part) => part.type === "data-tool-call-status"
+  ) as {
+    type: "data-tool-call-status";
+    data: {
+      status: "loading" | "success" | "error" | undefined;
+      toolCallId: string;
+    };
+  }[];
+
   return (
     <Message>
       <div className="group flex flex-col w-full max-w-3xl flex-1 items-start gap-4 px-6 pb-2 mb-2 mx-auto">
         <div className={cn("flex min-w-full flex-col gap-2")}>
           {parts?.map((part, idx) => {
             // In AI SDK v5, handle tool-call parts
-            if (part.type.startsWith("tool-")) {
-              return <Tool toolPart={part as ToolPart} />;
-            } else if (part.type === "text") {
+            if (part.type === "text") {
+              return <Response key={idx}>{part.text}</Response>;
+            } else if (isToolUIPart(part)) {
+              const toolCallStatus = toolCallStatusList?.find(
+                (status) => status.data.toolCallId === part.toolCallId
+              )?.data?.status;
+              const toolName = getToolName(part);
+              const toolCallId = part.toolCallId;
               return (
-                <MessageContent
-                  className={cn(
-                    "prose dark:prose-invert relative min-w-full bg-transparent p-0",
-                    "prose-h1:scroll-m-20 prose-h1:text-2xl prose-h1:font-semibold prose-h2:mt-8 prose-h2:scroll-m-20 prose-h2:text-xl prose-h2:mb-3 prose-h2:font-medium prose-h3:scroll-m-20 prose-h3:text-base prose-h3:font-medium prose-h4:scroll-m-20 prose-h5:scroll-m-20 prose-h6:scroll-m-20 prose-strong:font-medium prose-table:block prose-table:overflow-y-auto"
-                  )}
-                  markdown={true}
-                >
-                  {part.text}
-                </MessageContent>
+                <div key={toolCallId} title={toolName} className="space-y-2">
+                  <Tool
+                    toolPart={
+                      {
+                        ...part,
+                        state:
+                          toolCallStatus === "loading"
+                            ? "input-streaming"
+                            : toolCallStatus === "success"
+                              ? "output-available"
+                              : toolCallStatus === "error"
+                                ? "output-error"
+                                : part.state,
+                      } as ToolPart
+                    }
+                  />
+                  {toolsRequiringConfirmation.includes(
+                    toolName as keyof typeof tools
+                  ) &&
+                    part.state === "input-available" && (
+                      <div>
+                        <Button
+                          onClick={async () => {
+                            addToolResult({
+                              toolCallId,
+                              result: APPROVAL.YES,
+                            });
+                          }}
+                        >
+                          Yes
+                        </Button>
+                        <Button
+                          onClick={async () => {
+                            addToolResult({
+                              toolCallId,
+                              result: APPROVAL.NO,
+                            });
+                          }}
+                        >
+                          No
+                        </Button>
+                      </div>
+                    )}
+                </div>
               );
             } else if (part.type === "reasoning") {
               return (

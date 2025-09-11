@@ -34,7 +34,7 @@ export const Chat = ({
     },
   });
   // Wrapper to match ChatBox's expected signature
-  const addToolResult = ({
+  const addToolResult = async ({
     toolCallId,
     result,
   }: {
@@ -46,12 +46,20 @@ export const Chat = ({
       .flatMap((m) => m.parts || [])
       .find((part: any) => part.toolCallId === toolCallId)
       ?.type?.replace("tool-", "");
-
     if (toolName) {
-      originalAddToolResult({
+      const _chatId = await ensureChatExists(chatId, agentInput);
+      if (!_chatId) return;
+      await originalAddToolResult({
         tool: toolName,
         toolCallId,
         output: result,
+      });
+      sendMessage(undefined, {
+        body: {
+          userId,
+          chatId: _chatId,
+          model: selectedModel,
+        },
       });
     }
   };

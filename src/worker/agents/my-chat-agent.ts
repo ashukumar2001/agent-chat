@@ -15,8 +15,9 @@ import { MODELS } from "../lib/models";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { MessageType, OutgoingMessage } from "../../react-app/types/ai-types";
 import { getUserKey } from "../lib/user-keys";
-import { tools } from "../lib/tools";
-import { cleanMessagesForReasoning } from "../lib/utils";
+import { executions, tools } from "../lib/tools";
+import { processToolCalls } from "../lib/utils";
+import { HumanInTheLoopUIMessage } from "../types/misc";
 
 const decoder = new TextDecoder();
 
@@ -212,7 +213,7 @@ export class MyChatAgent extends Agent<Env> {
         this.#broadcastChatMessage({ type: MessageType.CF_AGENT_CHAT_MESSAGES, messages }, excludeBroadcastIds);
     };
 
-    async onChatMessage(messages: MessageAISDK[], options?: {
+    async onChatMessage(messages: HumanInTheLoopUIMessage[], options?: {
         abortSignal: AbortSignal | undefined;
         config: { model: string, userId: string };
         onFinish?: UIMessageStreamOnFinishCallback<MessageAISDK>;
@@ -239,45 +240,48 @@ export class MyChatAgent extends Agent<Env> {
                 }
                 const toolsEnabled = modelConfig.tools === true;
 
-                // Filter reasoning content for non-thinking models to prevent API errors
-                const filteredMessages = modelConfig.reasoning ? messages : cleanMessagesForReasoning(messages);
+                // // Filter reasoning content for non-thinking models to prevent API errors
+                // const filteredMessages = modelConfig.reasoning ? messages : cleanMessagesForReasoning(messages);
 
-                const processedMessages = convertToModelMessages(filteredMessages, {
-                    ignoreIncompleteToolCalls: true,
-                });
-                const result = streamText({
-                    model: modelInstance!,
-                    system: DEFAULT_SYSTEM_PROMPT,
-                    messages: processedMessages,
-                    abortSignal: options?.abortSignal,
-                    tools: toolsEnabled ? tools : undefined,
-                    onError: (error) => {
-                        console.error("Agent - streamText error:", error);
-                    },
-                    stopWhen: stepCountIs(2),
-                    providerOptions: {
-                        ...(modelConfig.reasoning && {
-                            google: {
-                                thinkingConfig: {
-                                    thinkingBudget: 2000,
-                                    includeThoughts: true,
-                                },
-                            },
-                        }),
-                    }
-                });
+
+
 
                 // Convert the AI SDK stream to the format expected by the frontend
                 const stream = createUIMessageStream({
                     originalMessages: messages,
-                    execute: ({ writer }) => {
-                        writer.merge(result.toUIMessageStream({ sendReasoning: modelConfig.reasoning }));
+                    execute: async ({ writer }) => {
+                        const processedMessages = await processToolCalls({ messages, writer, tools }, executions);
+
+                        const modelMessages = convertToModelMessages(processedMessages, {
+                            ignoreIncompleteToolCalls: true,
+                        });
+                        const result = streamText({
+                            model: modelInstance!,
+                            system: DEFAULT_SYSTEM_PROMPT,
+                            messages: modelMessages,
+                            abortSignal: options?.abortSignal,
+                            tools: toolsEnabled ? tools : undefined,
+                            onError: (error) => {
+                                console.error("Agent - streamText error:", error);
+                            },
+                            stopWhen: stepCountIs(10),
+                            providerOptions: {
+                                ...(modelConfig.reasoning && {
+                                    google: {
+                                        thinkingConfig: {
+                                            thinkingBudget: 2000,
+                                            includeThoughts: true,
+                                        },
+                                    },
+                                }),
+                            },
+                        });
+                        writer.merge(result.toUIMessageStream({ sendReasoning: modelConfig.reasoning, originalMessages: processedMessages, onFinish: options?.onFinish }));
                     },
                     onError: (error) => {
                         console.error("Error while streaming: ", error)
                         return "Error while streaming: ";
                     },
-                    onFinish: options?.onFinish
                 });
 
                 const resp = createUIMessageStreamResponse({ stream, });
