@@ -1,7 +1,7 @@
 import type { UIMessage } from "ai";
 import { ChatContainer } from "@/components/ui/chat-container";
 import { Message } from "./message";
-import { useRef } from "react";
+import { useRef, useMemo } from "react";
 import { ScrollButton } from "@/components/ui/scroll-button";
 import { Loader } from "../ai-elements/loader";
 type ChatBoxProps = {
@@ -22,6 +22,27 @@ export const ChatBox = ({ messages, status, addToolResult }: ChatBoxProps) => {
     messages?.length > 0 ? messages[messages.length - 1] : null;
 
   console.log({ lastMessage });
+
+      // Check if we should show loading animation
+    const shouldShowLoading = useMemo(() => {
+      if (status === 'submitted') {
+        return true;
+      }
+
+      if (status === 'streaming') {
+        // Show loading if only user message exists (no assistant response yet)
+        if (lastMessage?.role === 'user') {
+          return true;
+        }
+        // Show loading if assistant message exists but has 0 or 1 parts (just starting)
+        if (lastMessage?.role === 'assistant') {
+          const partsCount = lastMessage.parts?.length || 0;
+          return partsCount <= 1;
+        }
+      }
+
+      return false;
+    }, [status, lastMessage]);
 
   return (
     <div className="relative flex h-full w-full flex-col items-center overflow-x-hidden overflow-y-auto">
@@ -53,15 +74,7 @@ export const ChatBox = ({ messages, status, addToolResult }: ChatBoxProps) => {
             />
           );
         })}
-        {status === "streaming" &&
-          lastMessage &&
-          lastMessage.role === "assistant" &&
-          (!lastMessage.parts ||
-            lastMessage.parts.filter((part) => part.type === "text").length ===
-              0 ||
-            lastMessage.parts
-              .filter((part) => part.type === "text")
-              .every((part) => part.text === "")) && (
+        {shouldShowLoading && (
             <div className="group flex w-full max-w-3xl items-center mx-auto px-6">
               <Loader />
             </div>
