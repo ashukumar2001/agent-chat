@@ -3,6 +3,7 @@ import { Button } from "../ui/button";
 import { Palette, Key } from "lucide-react";
 import { SettingsDialog } from "@/components/settings";
 import { SettingsSection } from "@/components/settings/types";
+import { SidebarTrigger } from "../ui/sidebar";
 
 export const AppSidebarTrigger = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -16,8 +17,9 @@ export const AppSidebarTrigger = () => {
 
   return (
     <>
-      <header className="flex h-12 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-        <div className="flex items-center justify-between gap-2 px-4 w-full">
+      <header className="flex h-12 shrink-0 border-b items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+        <div className="flex items-center justify-between gap-2 px-2 w-full">
+          <SidebarTrigger />
           <div className="flex items-center gap-1 ml-auto">
             <Button
               variant="ghost"

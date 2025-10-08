@@ -23,7 +23,6 @@ function RootComponent() {
     >
       <Toaster />
       <SidebarProvider>
-        <SidebarTrigger className="absolute inset-3 z-[99]" />
         <AppSidebar />
         <SidebarInset>
           <AppSidebarTrigger />

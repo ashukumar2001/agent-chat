@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { SettingsSection } from "./types";
 import { SETTINGS_SECTIONS } from "./constants";
@@ -8,6 +8,7 @@ import { ApiKeysSettings } from "./api-keys-settings";
 import { ModelsSettings } from "./models-settings";
 import { ConnectionsSettings } from "./connections-settings";
 import { ProfilePage } from "../profile";
+import { DialogTitle } from "@radix-ui/react-dialog";
 
 interface SettingsDialogProps {
   open: boolean;
@@ -50,6 +51,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="!w-[95vw] !max-w-[95vw] h-[85vh] md:!w-[750px] md:!max-w-[750px] md:h-[580px] lg:!w-[900px] lg:!max-w-[900px] lg:h-[600px] p-0 gap-0">
+        <DialogTitle className="sr-only">Settings</DialogTitle>
+        <DialogDescription className="sr-only">User Preferences</DialogDescription>
         <div className="flex flex-1 overflow-hidden">
           {/* Left Sidebar */}
           <div className="w-44 md:w-48 lg:w-56 border-r bg-gray-50/50 dark:bg-gray-900/50">
