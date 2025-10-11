@@ -39,7 +39,7 @@ Two environments configured: `dev` and `prod`
     "durable_objects": {
       "bindings": [
         { "name": "Chat", "class_name": "Chat" },
-        { "name": "MyChatAgent", "class_name": "MyChatAgent" }
+        { "name": "ChatAgent", "class_name": "ChatAgent" }
       ]
     },
     "d1_databases": [
@@ -121,7 +121,7 @@ Main worker file structure:
 
 ```typescript
 export { Chat } from "./agents/chat";
-export { MyChatAgent } from "./agents/my-chat-agent";
+export { ChatAgent } from "./agents/multi-model-agent";
 import { trpcServer } from "@hono/trpc-server";
 import { logger } from "hono/logger"
 import { Hono } from "hono";
@@ -173,7 +173,7 @@ interface Env {
   
   // Durable Object bindings
   Chat: DurableObjectNamespace;
-  MyChatAgent: DurableObjectNamespace;
+  ChatAgent: DurableObjectNamespace;
   
   // Environment variables
   CLOUDFLARE_ENV: string;
@@ -193,13 +193,13 @@ Agents are implemented as Durable Objects with persistence:
 "durable_objects": {
   "bindings": [
     { "name": "Chat", "class_name": "Chat" },
-    { "name": "MyChatAgent", "class_name": "MyChatAgent" }
+    { "name": "ChatAgent", "class_name": "ChatAgent" }
   ]
 },
 "migrations": [
   {
     "tag": "v0",
-    "new_sqlite_classes": ["Chat", "MyChatAgent"]
+    "new_sqlite_classes": ["Chat", "ChatAgent"]
   }
 ]
 ```

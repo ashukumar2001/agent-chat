@@ -14,8 +14,7 @@ import {
 } from "../ai-elements/reasoning";
 import { Button } from "../ui/button";
 import { Response } from "../ai-elements/response";
-import { APPROVAL } from "@worker/lib/utils";
-import { tools, toolsRequiringConfirmation } from "@worker/lib/tools";
+import { APPROVAL, toolsRequiringConfirmation } from "@worker/lib/utils";
 type AssistantMessageProps = {
   children: string;
   copied: boolean;
@@ -84,9 +83,7 @@ export const AssistantMessage = ({
                       } as ToolPart
                     }
                   />
-                  {toolsRequiringConfirmation.includes(
-                    toolName as keyof typeof tools
-                  ) &&
+                  {toolsRequiringConfirmation.includes(toolName) &&
                     part.state === "input-available" && (
                       <div>
                         <Button

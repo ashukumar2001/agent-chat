@@ -1,201 +1,183 @@
-import {
-    convertToModelMessages,
-    Tool,
-    ToolCallOptions,
-    ToolSet,
-    UIMessageStreamWriter,
-    getToolName,
-    isToolUIPart,
-    UIMessage,
-} from 'ai';
-import { HumanInTheLoopUIMessage } from '../types/misc';
+import type { UIMessage } from "@ai-sdk/react";
+import type { UIMessageStreamWriter, ToolSet } from "ai";
+import type { z } from "zod";
+
+// Helper type to infer tool arguments from Zod schema
+type InferToolArgs<T> = T extends { inputSchema: infer S }
+  ? S extends z.ZodType
+    ? z.infer<S>
+    : never
+  : never;
+/**
+ *  tool implementation
+ */
+export const executions = {
+  getWeatherInformation: async (args: unknown): Promise<string> => {
+    const { city } = args as { city: string };
+    const conditions = ["sunny", "cloudy", "rainy", "snowy"];
+    // Simulate an API call delay
+    await new Promise((res) => setTimeout(res, 2000));
+    return `The weather in ${city} is ${
+      conditions[Math.floor(Math.random() * conditions.length)]
+    }.`;
+  },
+};
 
 /**
- * Cleans reasoning content from messages to prevent compatibility issues when switching to non-thinking models
- * @param messages - Array of messages to clean
- * @returns Cleaned messages array with reasoning content removed
+ * Tools that require Human-In-The-Loop
  */
-export function cleanMessagesForReasoning<T extends UIMessage>(messages: T[]): T[] {
-    return messages.map((message) => {
-        // If message doesn't have parts, return as is
-        if (!message.parts || !Array.isArray(message.parts)) {
-            return message;
-        }
-
-        // Filter out reasoning parts and clean provider metadata
-        const cleanedParts = message.parts.filter((part) => {
-            const partType = part.type as string;
-            return partType !== "reasoning";
-        });
-        // Remove providerMetadata that contains thoughtSignature for Google models
-        for (let i = 0; i < cleanedParts.length; i++) {
-            const part = cleanedParts[i] as any; // Type assertion to handle non-standard properties
-            if (part.providerMetadata) {
-                delete part.providerMetadata;
-            }
-        }
-        // Clean provider metadata that might contain thoughtSignature
-        const cleanedMessage: any = {
-            ...message,
-            parts: cleanedParts
-        };
-        return cleanedMessage as T;
-    }).filter((message) => {
-        // Keep user and system messages regardless
-        if (message.role === "user" || message.role === "system") {
-            return true;
-        }
-
-        // For assistant messages, only keep them if they have meaningful content
-        if (message.role === "assistant") {
-            // If message has non-empty parts with text content, keep it
-            if (message.parts && message.parts.length > 0) {
-                return message.parts.some(part => {
-                    const partType = part.type as string;
-                    return partType === "text" && "text" in part && part.text && String(part.text).trim();
-                });
-            }
-
-            // Remove empty assistant messages
-            return false;
-        }
-
-        // Keep other message types (tool, etc.)
-        return true;
-    });
+export const toolsRequiringConfirmation = Object.keys(executions);
+// Type guard to check if part has required properties
+function isToolConfirmationPart(part: unknown): part is {
+  type: string;
+  output: string;
+  input?: Record<string, unknown>;
+} {
+  return (
+    typeof part === "object" &&
+    part !== null &&
+    "type" in part &&
+    "output" in part &&
+    typeof (part as { type: unknown }).type === "string" &&
+    typeof (part as { output: unknown }).output === "string"
+  );
 }
 
-// Approval string to be shared across frontend and backend
 export const APPROVAL = {
-    YES: 'Yes, confirmed.',
-    NO: 'No, denied.',
+  NO: "No, denied.",
+  YES: "Yes, confirmed.",
 } as const;
 
-function isValidToolName<K extends PropertyKey, T extends object>(
-    key: K,
-    obj: T,
-): key is K & keyof T {
-    return key in obj;
+/**
+ * Check if a message contains tool confirmations
+ */
+export function hasToolConfirmation(message: UIMessage): boolean {
+  return (
+    message?.parts?.some(
+      (part) =>
+        part.type?.startsWith("tool-") &&
+        toolsRequiringConfirmation.includes(part.type?.slice("tool-".length)) &&
+        "output" in part
+    ) || false
+  );
 }
 
 /**
  * Processes tool invocations where human input is required, executing tools when authorized.
- *
- * @param options - The function options
- * @param options.tools - Map of tool names to Tool instances that may expose execute functions
- * @param options.writer - UIMessageStream writer for sending results back to the client
- * @param options.messages - Array of messages to process
- * @param executionFunctions - Map of tool names to execute functions
- * @returns Promise resolving to the processed messages
+ * using UIMessageStreamWriter
  */
 export async function processToolCalls<
-    Tools extends ToolSet,
-    ExecutableTools extends {
-        [Tool in keyof Tools as Tools[Tool] extends { execute: Function }
-        ? never
-        : Tool]: Tools[Tool];
-    },
+  Tools extends ToolSet,
+  ExecutableTools extends {
+    [Tool in keyof Tools as Tools[Tool] extends { execute: Function }
+      ? never
+      : Tool]: Tools[Tool];
+  },
 >(
-    {
-        writer,
-        messages,
-    }: {
-        tools: Tools; // used for type inference
-        writer: UIMessageStreamWriter;
-        messages: HumanInTheLoopUIMessage[]; // IMPORTANT: replace with your message type
-    },
-    executeFunctions: {
-        [K in keyof Tools & keyof ExecutableTools]?: (
-            args: ExecutableTools[K] extends Tool<infer P> ? P : never,
-            context: ToolCallOptions,
-        ) => Promise<any>;
-    },
-): Promise<HumanInTheLoopUIMessage[]> {
-    const lastMessage = messages[messages.length - 1];
-    const parts = lastMessage.parts;
-    if (!parts) return messages;
+  {
+    writer,
+    messages,
+    tools: _tools,
+  }: {
+    tools: Tools; // used for type inference
+    writer: UIMessageStreamWriter;
+    messages: UIMessage[];
+  },
+  executeFunctions: {
+    [K in keyof ExecutableTools as ExecutableTools[K] extends {
+      inputSchema: z.ZodType;
+    }
+      ? K
+      : never]?: (args: InferToolArgs<ExecutableTools[K]>) => Promise<string>;
+  }
+): Promise<UIMessage[]> {
+  const lastMessage = messages[messages.length - 1];
+  const parts = lastMessage.parts;
+  if (!parts) return messages;
 
-    const processedParts = await Promise.all(
-        parts.map(async part => {
-            // Only process tool invocations parts
-            if (!isToolUIPart(part)) return part;
+  const processedParts = await Promise.all(
+    parts.map(async (part) => {
+      // Look for tool parts with output (confirmations) - v5 format
+      if (isToolConfirmationPart(part) && part.type.startsWith("tool-")) {
+        const toolName = part.type.replace("tool-", "");
+        const output = part.output;
+        // Only process if we have an execute function for this tool
+        if (!(toolName in executeFunctions)) {
+          return part;
+        }
 
-            const toolName = getToolName(part);
+        let result: string = "";
 
-            // Only continue if we have an execute function for the tool (meaning it requires confirmation) and it's in a 'result' state
-            if (!(toolName in executeFunctions) || part.state !== 'output-available')
-                return part;
+        if (output === APPROVAL.YES) {
+          const toolInstance =
+            executeFunctions[toolName as keyof typeof executeFunctions];
+          if (toolInstance) {
+            // Pass the input data - the tool's Zod schema will validate at runtime
+            const toolInput = part.input ?? {};
+            // We need to trust that the runtime data matches the expected type
+            // The Zod schema in the tool will validate this
+            result = await (
+              toolInstance as (args: typeof toolInput) => Promise<string>
+            )(toolInput);
 
-            let result;
-
-            if (part.output === APPROVAL.YES) {
-
-                // Get the tool and check if the tool has an execute function.
-                if (
-                    !isValidToolName(toolName, executeFunctions) ||
-                    part.state !== 'output-available'
-                ) {
-                    return part;
-                }
-
-                const toolInstance = executeFunctions[toolName] as Tool['execute'];
-                if (toolInstance) {
-                    writer.write({
-                        type: "data-tool-call-status",
-                        id: part.toolCallId,
-                        data: {
-                            status: "loading",
-                            toolCallId: part.toolCallId,
-                        }
-                    })
-                    result = await toolInstance(part.input, {
-                        messages: convertToModelMessages(messages),
-                        toolCallId: part.toolCallId,
-                    });
-                } else {
-                    result = 'Error: No execute function found on tool';
-                }
-            } else if (part.output === APPROVAL.NO) {
-                result = 'Error: User denied access to tool execution';
-            } else {
-                // For any unhandled responses, return the original part.
-                return part;
-            }
-            writer.write({
-                type: "data-tool-call-status",
-                id: part.toolCallId,
-                data: {
-                    status: "success",
-                    toolCallId: part.toolCallId,
-                }
-            })
-            // Forward updated tool result to the client.
-            writer.write({
-                type: 'tool-output-available',
-                toolCallId: part.toolCallId,
-                output: result,
+            // Stream the result directly using writer
+            const messageId = crypto.randomUUID();
+            const textStream = new ReadableStream({
+              start(controller) {
+                controller.enqueue({
+                  type: "text-start",
+                  id: messageId,
+                });
+                controller.enqueue({
+                  type: "text-delta",
+                  id: messageId,
+                  delta: result,
+                });
+                controller.enqueue({
+                  type: "text-end",
+                  id: messageId,
+                });
+                controller.close();
+              },
             });
+            writer.merge(textStream);
+          } else {
+            result = "Error: No execute function found on tool";
+          }
+        } else if (output === APPROVAL.NO) {
+          result = "User denied access to tool execution";
+          // Stream the result directly using writer
+          const messageId = crypto.randomUUID();
+          const textStream = new ReadableStream({
+            start(controller) {
+              controller.enqueue({
+                type: "text-start",
+                id: messageId,
+              });
+              controller.enqueue({
+                type: "text-delta",
+                id: messageId,
+                delta: result,
+              });
 
-            // Return updated toolInvocation with the actual result.
-            return {
-                ...part,
-                output: result,
-            };
-        }),
-    );
+              controller.enqueue({
+                type: "text-end",
+                id: messageId,
+              });
 
-    // Finally return the processed messages
-    return [...messages.slice(0, -1), { ...lastMessage, parts: processedParts }];
-}
+              controller.close();
+            },
+          });
+          writer.merge(textStream);
+        }
+        return part; // Return the original part
+      }
+      return part; // Return unprocessed parts
+    })
+  );
 
-export function getToolsRequiringConfirmation<
-    T extends ToolSet,
-// E extends {
-//   [K in keyof T as T[K] extends { execute: Function } ? never : K]: T[K];
-// },
->(tools: T): string[] {
-    return (Object.keys(tools) as (keyof T)[]).filter(key => {
-        const maybeTool = tools[key];
-        return typeof maybeTool.execute !== 'function';
-    }) as string[];
+  return [
+    ...messages.slice(0, -1),
+    { ...lastMessage, parts: processedParts.filter(Boolean) },
+  ];
 }

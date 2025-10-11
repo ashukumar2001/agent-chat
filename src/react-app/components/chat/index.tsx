@@ -2,11 +2,13 @@ import { useAgent } from "agents/react";
 import { ChatBox } from "./chat-box";
 import { ChatInput } from "../chat-input";
 import { useEffect, useMemo, useState } from "react";
-import { tools, toolsRequiringConfirmation } from "@worker/lib/tools";
+import { clientTools } from "@worker/lib/tools";
 import { DEFUALT_MODEL } from "@worker/lib/config";
 import { useChats } from "@/hooks/use-chats";
-import { useAgentChat } from "@/hooks/use-agent-chat";
 import { toast } from "sonner";
+import { toolsRequiringConfirmation } from "@worker/lib/utils";
+import { AITool, useAgentChat } from "agents/ai-react";
+import { isToolUIPart } from "ai";
 
 export const Chat = ({
   chatId,
@@ -16,7 +18,7 @@ export const Chat = ({
   userId: string;
 }) => {
   const agent = useAgent({
-    agent: "my-chat-agent",
+    agent: "chat-agent",
     name: `${userId}:${chatId}`,
   });
   const {
@@ -32,6 +34,9 @@ export const Chat = ({
         closeButton: true,
       });
     },
+    experimental_automaticToolResolution: true,
+    toolsRequiringConfirmation,
+    tools: clientTools satisfies Record<string, AITool>,
   });
   // Wrapper to match ChatBox's expected signature
   const addToolResult = async ({
@@ -54,35 +59,17 @@ export const Chat = ({
         toolCallId,
         output: result,
       });
-      sendMessage(undefined, {
-        body: {
-          userId,
-          chatId: _chatId,
-          model: selectedModel,
-        },
-      });
     }
   };
   const { createNewChatMutation, getChatById, updateChatMutation } =
     useChats(userId);
-
-  const pendingToolCallConfirmation = useMemo(
-    () =>
-      agentMessages.some((m) =>
-        m.parts?.some((part) => {
-          if (part.type.startsWith("tool-")) {
-            const toolPart = part as any; // Type assertion to access state property
-            return (
-              toolPart.state === "input-available" &&
-              toolsRequiringConfirmation.includes(
-                part.type.replace("tool-", "") as keyof typeof tools
-              )
-            );
-          }
-          return false;
-        })
-      ),
-    [agentMessages]
+  // Tools requiring confirmation are auto-detected by useAgentChat from tools object
+  // Tools without execute function need confirmation (getWeatherInformation)
+  // Tools with execute function are automatic (getLocalTime)
+  const pendingToolCallConfirmation = agentMessages.some((m) =>
+    m.parts?.some(
+      (part) => isToolUIPart(part) && part.state === "input-available"
+    )
   );
   const currentChat = useMemo(
     () => (chatId ? getChatById(chatId) : null),
@@ -140,9 +127,11 @@ export const Chat = ({
       },
       {
         body: {
-          userId,
-          chatId: _chatId,
-          model: selectedModel,
+          config: {
+            userId,
+            chatId: _chatId,
+            model: selectedModel,
+          },
         },
       }
     );
