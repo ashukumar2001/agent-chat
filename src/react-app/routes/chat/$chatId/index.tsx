@@ -3,7 +3,7 @@ import { useChatSession } from "@/hooks/use-chat-session";
 import { useSession } from "@/hooks/useSession";
 import { createFileRoute } from "@tanstack/react-router";
 import { Navigate } from "@tanstack/react-router";
-export const Route = createFileRoute("/chat/$chatId")({
+export const Route = createFileRoute("/chat/$chatId/")({
   component: RouteComponent,
 });
 

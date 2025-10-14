@@ -79,6 +79,7 @@ export const Chat = ({
     currentChat?.model || DEFUALT_MODEL
   );
   const [agentInput, setAgentInput] = useState("");
+  const [isWebSearchEnabled, setIsWebSearchEnabled] = useState(false);
 
   const handleModelChange = async (newModel: string) => {
     setSelectedModel(newModel);
@@ -131,6 +132,7 @@ export const Chat = ({
             userId,
             chatId: _chatId,
             model: selectedModel,
+            webSearch: isWebSearchEnabled,
           },
         },
       }
@@ -167,6 +169,8 @@ export const Chat = ({
           pendingToolCallConfirmation={pendingToolCallConfirmation}
           selectedModel={selectedModel}
           handleModelChange={handleModelChange}
+          isWebSearchEnabled={isWebSearchEnabled}
+          setIsWebSearchEnabled={setIsWebSearchEnabled}
         />
       </div>
     </div>

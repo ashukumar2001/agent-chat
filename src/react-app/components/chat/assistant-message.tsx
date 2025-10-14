@@ -15,6 +15,7 @@ import {
 import { Button } from "../ui/button";
 import { Response } from "../ai-elements/response";
 import { APPROVAL, toolsRequiringConfirmation } from "@worker/lib/utils";
+import { Source, SourceContent, SourceTrigger } from "../prompt-kit/sources";
 type AssistantMessageProps = {
   children: string;
   copied: boolean;
@@ -51,11 +52,27 @@ export const AssistantMessage = ({
       toolCallId: string;
     };
   }[];
+  const sources = parts?.filter((part) => part.type === "source-url") || [];
 
   return (
     <Message>
       <div className="group flex flex-col w-full max-w-3xl flex-1 items-start gap-4 px-6 pb-2 mb-2 mx-auto">
         <div className={cn("flex min-w-full flex-col gap-2")}>
+          {sources && sources.length > 0 && (
+            <div className="flex gap-2 mb-2 flex-wrap">
+              {sources.map((source) => {
+                return (
+                  <Source href={source.url} key={source.sourceId}>
+                    <SourceTrigger showFavicon label={source.title} />
+                    <SourceContent
+                      title={source.title || source.url}
+                      description={source.url}
+                    />
+                  </Source>
+                );
+              })}
+            </div>
+          )}
           {parts?.map((part, idx) => {
             // In AI SDK v5, handle tool-call parts
             if (part.type === "text") {

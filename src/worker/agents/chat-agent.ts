@@ -16,7 +16,11 @@ import {
 } from "../lib/utils";
 import { DEFAULT_SYSTEM_PROMPT, DEFUALT_MODEL } from "../lib/config";
 import { MODELS } from "../lib/models";
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import {
+  createGoogleGenerativeAI,
+  google,
+  GoogleGenerativeAIProviderOptions,
+} from "@ai-sdk/google";
 import { getUserKey } from "../lib/user-keys";
 
 export class ChatAgent extends AIChatAgent<Env> {
@@ -32,6 +36,7 @@ export class ChatAgent extends AIChatAgent<Env> {
   ) {
     const userId = config?.userId as string;
     const modelId = (config?.model as string) || DEFUALT_MODEL;
+    const webSearchEnabled = Boolean(config?.webSearch);
     const startTime = Date.now();
     const lastMessage = this.messages[this.messages.length - 1];
 
@@ -72,13 +77,29 @@ export class ChatAgent extends AIChatAgent<Env> {
       messages: convertToModelMessages(this.messages),
       model: modelInstance,
       onFinish,
-      tools: modelConfig.tools ? tools : undefined,
+      tools: modelConfig.tools
+        ? {
+            ...(modelConfig.webSearch && webSearchEnabled
+              ? {
+                  google_search: google.tools.googleSearch({}),
+                }
+              : tools),
+          }
+        : undefined,
       stopWhen: stepCountIs(5),
       abortSignal,
+      providerOptions: {
+        google: {
+          thinkingConfig: {
+            includeThoughts: true,
+            thinkingBudget: modelConfig.reasoning ? 1024 : 0,
+          },
+        } as GoogleGenerativeAIProviderOptions,
+      },
     });
     return result.toUIMessageStreamResponse({
+      sendSources: true,
       messageMetadata: ({ part }) => {
-        // This is optional, purely for demo purposes in this example
         if (part.type === "start") {
           return {
             model: modelId,
@@ -86,10 +107,17 @@ export class ChatAgent extends AIChatAgent<Env> {
             messageCount: this.messages.length,
           };
         }
+        if (part.type === "finish-step") {
+          return {
+            providerMetadata:
+              part.providerMetadata?.[modelConfig.providerId] || {},
+          };
+        }
         if (part.type === "finish") {
           return {
             responseTime: Date.now() - startTime,
             totalTokens: part.totalUsage?.totalTokens,
+            cachedInputTokens: part.totalUsage.cachedInputTokens,
           };
         }
       },

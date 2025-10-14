@@ -5,8 +5,10 @@ import {
   PromptInputTextarea,
 } from "@/components/ui/prompt-input";
 import { Button } from "../ui/button";
-import { ArrowUp, Square } from "lucide-react";
+import { ArrowUp, Globe, Square } from "lucide-react";
 import { ModelSwitcher } from "../chat/model-switcher";
+import { useEffect } from "react";
+import { MODELS } from "@worker/lib/models";
 
 type ChatInputProps = {
   value: string;
@@ -20,6 +22,8 @@ type ChatInputProps = {
   ) => void;
   selectedModel: string;
   handleModelChange: (model: string) => void;
+  isWebSearchEnabled: boolean;
+  setIsWebSearchEnabled: React.Dispatch<React.SetStateAction<boolean>>;
 };
 export const ChatInput = ({
   value,
@@ -29,7 +33,16 @@ export const ChatInput = ({
   pendingToolCallConfirmation,
   selectedModel,
   handleModelChange,
+  isWebSearchEnabled,
+  setIsWebSearchEnabled,
 }: ChatInputProps) => {
+  const modelConfig = MODELS.find((model) => model.id === selectedModel);
+
+  useEffect(() => {
+    if (!modelConfig?.webSearch) {
+      setIsWebSearchEnabled(false);
+    }
+  }, [modelConfig?.webSearch]);
   return (
     <div className="relative order-2 px-2 pb-3 sm:pb-4 md:order-1">
       <PromptInput
@@ -44,13 +57,25 @@ export const ChatInput = ({
           autoFocus
         />
         <PromptInputActions className="justify-between mt-4">
-          <div>
+          <div className="gap-2 flex">
             <PromptInputAction tooltip="Model">
               <ModelSwitcher
                 selectedModel={selectedModel}
                 handleModelChange={handleModelChange}
               />
             </PromptInputAction>
+            {modelConfig?.webSearch && (
+              <PromptInputAction tooltip="Search">
+                <Button
+                  onClick={() => setIsWebSearchEnabled((prev) => !prev)}
+                  variant={isWebSearchEnabled ? "default" : "outline"}
+                  className="rounded-full"
+                >
+                  <Globe size={18} />
+                  Search
+                </Button>
+              </PromptInputAction>
+            )}
           </div>
 
           <PromptInputAction

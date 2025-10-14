@@ -41,7 +41,7 @@ export const tools = {
     inputSchema: getLocalTimeTool.inputSchema,
   },
   getWeatherInformation: getWeatherInformationTool,
-  getLocalNews: getLocalNewsTool,
+  // getLocalNews: getLocalNewsTool,
 };
 
 // Export AITool format for client-side use
