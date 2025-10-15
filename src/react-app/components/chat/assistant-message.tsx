@@ -3,7 +3,6 @@ import {
   MessageAction,
   MessageActions,
 } from "@/components/ui/message";
-import { cn } from "@/lib/utils";
 import { Check, Copy, Trash } from "lucide-react";
 import { getToolName, isToolUIPart, type UIMessage as MessageType } from "ai";
 import { Tool, ToolPart } from "../ui/tool";
@@ -31,6 +30,7 @@ type AssistantMessageProps = {
   }) => void;
   status: "streaming" | "ready" | "submitted" | "error";
   isLastMessage: boolean;
+  handleDeleteMessage: (messageId: string) => void;
 };
 export const AssistantMessage = ({
   children,
@@ -41,6 +41,7 @@ export const AssistantMessage = ({
   status,
   isLastMessage,
   addToolResult,
+  handleDeleteMessage,
 }: AssistantMessageProps) => {
   const isContentEmpty = children !== null && children !== "";
   const toolCallStatusList = parts?.filter(
@@ -169,7 +170,7 @@ export const AssistantMessage = ({
               <button
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-transparent transition"
                 aria-label="Delete"
-                // onClick={handleDelete}
+                onClick={() => handleDeleteMessage(id)}
                 type="button"
               >
                 <Trash className="size-4" />

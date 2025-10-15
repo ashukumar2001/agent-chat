@@ -8,7 +8,7 @@ import { useChats } from "@/hooks/use-chats";
 import { toast } from "sonner";
 import { toolsRequiringConfirmation } from "@worker/lib/utils";
 import { AITool, useAgentChat } from "agents/ai-react";
-import { isToolUIPart } from "ai";
+import { ChatRequestOptions, isToolUIPart } from "ai";
 
 export const Chat = ({
   chatId,
@@ -26,6 +26,9 @@ export const Chat = ({
     sendMessage,
     addToolResult: originalAddToolResult,
     status,
+    stop,
+    regenerate,
+    setMessages,
   } = useAgentChat({
     agent,
     onError: (error) => {
@@ -81,6 +84,7 @@ export const Chat = ({
   const [agentInput, setAgentInput] = useState("");
   const [isWebSearchEnabled, setIsWebSearchEnabled] = useState(false);
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const handleModelChange = async (newModel: string) => {
     setSelectedModel(newModel);
 
@@ -100,6 +104,11 @@ export const Chat = ({
       }
     }
   };
+  const handleDeleteMessage = (messageId: string) => {
+    setMessages((prev) => {
+      return prev.filter((m) => m.id !== messageId);
+    });
+  };
   const ensureChatExists = async (chatId: string, input: string) => {
     if (!currentChat) {
       const newChat = await createNewChatMutation.mutateAsync({
@@ -118,26 +127,51 @@ export const Chat = ({
     }
     return currentChat.id;
   };
-  const onSubmit = async () => {
+  const handleRetryMessage = async ({
+    messageId,
+  }: {
+    messageId?: string;
+  } & ChatRequestOptions) => {
     const _chatId = await ensureChatExists(chatId, agentInput);
-    if (!_chatId) return;
-
-    sendMessage(
-      {
-        text: agentInput,
-      },
-      {
-        body: {
-          config: {
-            userId,
-            chatId: _chatId,
-            model: selectedModel,
-            webSearch: isWebSearchEnabled,
-          },
+    regenerate({
+      messageId,
+      body: {
+        config: {
+          userId,
+          chatId: _chatId,
+          model: selectedModel,
+          webSearch: isWebSearchEnabled,
         },
-      }
-    );
-    setAgentInput("");
+      },
+    });
+  };
+  const onSubmit = async () => {
+    setIsSubmitting(true);
+    try {
+      const _chatId = await ensureChatExists(chatId, agentInput);
+      if (!_chatId) return;
+
+      sendMessage(
+        {
+          text: agentInput,
+        },
+        {
+          body: {
+            config: {
+              userId,
+              chatId: _chatId,
+              model: selectedModel,
+              webSearch: isWebSearchEnabled,
+            },
+          },
+        }
+      );
+      setAgentInput("");
+    } catch (error) {
+      toast.error("Failed to send message");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   useEffect(() => {
     console.log(agentMessages);
@@ -158,6 +192,8 @@ export const Chat = ({
         messages={agentMessages}
         addToolResult={addToolResult}
         status={status}
+        regenerate={handleRetryMessage}
+        handleDeleteMessage={handleDeleteMessage}
       />
       <div className="relative inset-x-0 bottom-0 z-50 mx-auto w-full max-w-3xl">
         <ChatInput
@@ -165,12 +201,14 @@ export const Chat = ({
           value={agentInput}
           handleInputChange={(e) => setAgentInput(e.target.value)}
           handleSubmit={onSubmit}
-          isLoading={status === "streaming"}
           pendingToolCallConfirmation={pendingToolCallConfirmation}
           selectedModel={selectedModel}
           handleModelChange={handleModelChange}
           isWebSearchEnabled={isWebSearchEnabled}
           setIsWebSearchEnabled={setIsWebSearchEnabled}
+          stop={stop}
+          status={status}
+          isSubmitting={isSubmitting}
         />
       </div>
     </div>

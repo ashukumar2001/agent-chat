@@ -1,4 +1,4 @@
-import type { UIMessage } from "ai";
+import type { ChatRequestOptions, ChatStatus, UIMessage } from "ai";
 import { ChatContainer } from "@/components/ui/chat-container";
 import { Message } from "./message";
 import { useRef, useMemo } from "react";
@@ -6,7 +6,7 @@ import { ScrollButton } from "@/components/ui/scroll-button";
 import { Loader } from "../ai-elements/loader";
 type ChatBoxProps = {
   messages: UIMessage[];
-  status: "streaming" | "ready" | "submitted" | "error";
+  status: ChatStatus;
   addToolResult: ({
     toolCallId,
     result,
@@ -14,35 +14,45 @@ type ChatBoxProps = {
     toolCallId: string;
     result: any;
   }) => void;
+  regenerate: (
+    props: {
+      messageId?: string;
+    } & ChatRequestOptions
+  ) => Promise<void>;
+  handleDeleteMessage: (messageId: string) => void;
 };
-export const ChatBox = ({ messages, status, addToolResult }: ChatBoxProps) => {
+export const ChatBox = ({
+  messages,
+  status,
+  addToolResult,
+  regenerate,
+  handleDeleteMessage,
+}: ChatBoxProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const lastMessage =
     messages?.length > 0 ? messages[messages.length - 1] : null;
 
-  console.log({ lastMessage });
+  // Check if we should show loading animation
+  const shouldShowLoading = useMemo(() => {
+    if (status === "submitted") {
+      return true;
+    }
 
-      // Check if we should show loading animation
-    const shouldShowLoading = useMemo(() => {
-      if (status === 'submitted') {
+    if (status === "streaming") {
+      // Show loading if only user message exists (no assistant response yet)
+      if (lastMessage?.role === "user") {
         return true;
       }
-
-      if (status === 'streaming') {
-        // Show loading if only user message exists (no assistant response yet)
-        if (lastMessage?.role === 'user') {
-          return true;
-        }
-        // Show loading if assistant message exists but has 0 or 1 parts (just starting)
-        if (lastMessage?.role === 'assistant') {
-          const partsCount = lastMessage.parts?.length || 0;
-          return partsCount <= 1;
-        }
+      // Show loading if assistant message exists but has 0 or 1 parts (just starting)
+      if (lastMessage?.role === "assistant") {
+        const partsCount = lastMessage.parts?.length || 0;
+        return partsCount <= 1;
       }
+    }
 
-      return false;
-    }, [status, lastMessage]);
+    return false;
+  }, [status, lastMessage]);
 
   return (
     <div className="relative flex h-full w-full flex-col items-center overflow-x-hidden overflow-y-auto">
@@ -71,14 +81,16 @@ export const ChatBox = ({ messages, status, addToolResult }: ChatBoxProps) => {
               parts={message.parts}
               status={status}
               isLastMessage={message.id === lastMessage?.id}
+              regenerate={regenerate}
+              handleDeleteMessage={handleDeleteMessage}
             />
           );
         })}
         {shouldShowLoading && (
-            <div className="group flex w-full max-w-3xl items-center mx-auto px-6">
-              <Loader />
-            </div>
-          )}
+          <div className="group flex w-full max-w-3xl items-center mx-auto px-6">
+            <Loader />
+          </div>
+        )}
       </ChatContainer>
       {status !== "streaming" && (
         <div className="absolute bottom-0 w-full max-w-3xl">
