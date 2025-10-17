@@ -3,8 +3,8 @@ import {
   MessageAction,
   MessageActions,
 } from "@/components/ui/message";
-import { Check, Copy, Trash } from "lucide-react";
-import { getToolName, isToolUIPart, type UIMessage as MessageType } from "ai";
+import { Check, Copy } from "lucide-react";
+import { getToolName, isToolUIPart } from "ai";
 import { Tool, ToolPart } from "../ui/tool";
 import {
   Reasoning,
@@ -15,11 +15,14 @@ import { Button } from "../ui/button";
 import { Response } from "../ai-elements/response";
 import { APPROVAL, toolsRequiringConfirmation } from "@worker/lib/utils";
 import { Source, SourceContent, SourceTrigger } from "../prompt-kit/sources";
+import { useMemo } from "react";
+import { MODELS } from "@worker/lib/models";
+import { type ChatMessage } from "@/types/ai-types";
 type AssistantMessageProps = {
   children: string;
   copied: boolean;
   copyToClipboard: () => void;
-  parts: MessageType["parts"];
+  parts: ChatMessage["parts"];
   id: string;
   addToolResult: ({
     toolCallId,
@@ -30,7 +33,7 @@ type AssistantMessageProps = {
   }) => void;
   status: "streaming" | "ready" | "submitted" | "error";
   isLastMessage: boolean;
-  handleDeleteMessage: (messageId: string) => void;
+  metadata?: ChatMessage["metadata"];
 };
 export const AssistantMessage = ({
   children,
@@ -41,7 +44,7 @@ export const AssistantMessage = ({
   status,
   isLastMessage,
   addToolResult,
-  handleDeleteMessage,
+  metadata,
 }: AssistantMessageProps) => {
   const isContentEmpty = children !== null && children !== "";
   const toolCallStatusList = parts?.filter(
@@ -53,6 +56,12 @@ export const AssistantMessage = ({
       toolCallId: string;
     };
   }[];
+  const modelConfig = useMemo(() => {
+    if (metadata?.model) {
+      return MODELS.find((model) => model.id === metadata.model);
+    }
+    return;
+  }, [metadata?.model]);
   const sources = parts?.filter((part) => part.type === "source-url") || [];
 
   return (
@@ -166,16 +175,13 @@ export const AssistantMessage = ({
                 )}
               </button>
             </MessageAction>
-            <MessageAction tooltip="Delete" side="bottom" delayDuration={0}>
-              <button
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-transparent transition"
-                aria-label="Delete"
-                onClick={() => handleDeleteMessage(id)}
-                type="button"
-              >
-                <Trash className="size-4" />
-              </button>
-            </MessageAction>
+            {!!modelConfig && modelConfig.name && (
+              <MessageAction side="bottom" tooltip="Model">
+                <div className="text-xs text-muted-foreground">
+                  {modelConfig.name}
+                </div>
+              </MessageAction>
+            )}
           </MessageActions>
         ) : null}
       </div>

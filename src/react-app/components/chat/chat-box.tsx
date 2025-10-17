@@ -1,11 +1,12 @@
-import type { ChatRequestOptions, ChatStatus, UIMessage } from "ai";
+import type { ChatRequestOptions, ChatStatus } from "ai";
 import { ChatContainer } from "@/components/ui/chat-container";
 import { Message } from "./message";
 import { useRef, useMemo } from "react";
 import { ScrollButton } from "@/components/ui/scroll-button";
 import { Loader } from "../ai-elements/loader";
+import { type ChatMessage } from "@/types/ai-types";
 type ChatBoxProps = {
-  messages: UIMessage[];
+  messages: ChatMessage[];
   status: ChatStatus;
   addToolResult: ({
     toolCallId,
@@ -19,14 +20,12 @@ type ChatBoxProps = {
       messageId?: string;
     } & ChatRequestOptions
   ) => Promise<void>;
-  handleDeleteMessage: (messageId: string) => void;
 };
 export const ChatBox = ({
   messages,
   status,
   addToolResult,
   regenerate,
-  handleDeleteMessage,
 }: ChatBoxProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -82,7 +81,7 @@ export const ChatBox = ({
               status={status}
               isLastMessage={message.id === lastMessage?.id}
               regenerate={regenerate}
-              handleDeleteMessage={handleDeleteMessage}
+              metadata={message.metadata}
             />
           );
         })}

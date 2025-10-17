@@ -70,7 +70,6 @@ export class ChatAgent extends AIChatAgent<Env> {
       });
       modelInstance = google(modelConfig.id);
     }
-
     // Use streamText directly and return with metadata
     const result = streamText({
       system: DEFAULT_SYSTEM_PROMPT,

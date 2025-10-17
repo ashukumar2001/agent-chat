@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { toolsRequiringConfirmation } from "@worker/lib/utils";
 import { AITool, useAgentChat } from "agents/ai-react";
 import { ChatRequestOptions, isToolUIPart } from "ai";
+import { ChatMessage } from "@/types/ai-types";
 
 export const Chat = ({
   chatId,
@@ -28,8 +29,7 @@ export const Chat = ({
     status,
     stop,
     regenerate,
-    setMessages,
-  } = useAgentChat({
+  } = useAgentChat<unknown, ChatMessage>({
     agent,
     onError: (error) => {
       toast.error("An error occurred", {
@@ -103,11 +103,6 @@ export const Chat = ({
         });
       }
     }
-  };
-  const handleDeleteMessage = (messageId: string) => {
-    setMessages((prev) => {
-      return prev.filter((m) => m.id !== messageId);
-    });
   };
   const ensureChatExists = async (chatId: string, input: string) => {
     if (!currentChat) {
@@ -193,7 +188,6 @@ export const Chat = ({
         addToolResult={addToolResult}
         status={status}
         regenerate={handleRetryMessage}
-        handleDeleteMessage={handleDeleteMessage}
       />
       <div className="relative inset-x-0 bottom-0 z-50 mx-auto w-full max-w-3xl">
         <ChatInput

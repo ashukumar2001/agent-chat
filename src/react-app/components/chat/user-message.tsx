@@ -5,7 +5,7 @@ import {
   MessageActions,
   MessageContent,
 } from "../ui/message";
-import { Check, Copy, RefreshCcw, Trash } from "lucide-react";
+import { Check, Copy, RefreshCcw } from "lucide-react";
 import { ChatRequestOptions } from "ai";
 
 type UserMessageProps = {
@@ -18,7 +18,6 @@ type UserMessageProps = {
     } & ChatRequestOptions
   ) => Promise<void>;
   id: string;
-  handleDeleteMessage: (messageId: string) => void;
 };
 export const UserMessage = ({
   children,
@@ -26,7 +25,6 @@ export const UserMessage = ({
   copyToClipboard,
   regenerate,
   id,
-  handleDeleteMessage,
 }: UserMessageProps) => {
   return (
     <Message
@@ -57,16 +55,6 @@ export const UserMessage = ({
             ) : (
               <Copy className="size-4" />
             )}
-          </button>
-        </MessageAction>
-        <MessageAction tooltip="Delete" side="bottom" delayDuration={0}>
-          <button
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-transparent transition"
-            aria-label="Delete"
-            onClick={() => handleDeleteMessage(id)}
-            type="button"
-          >
-            <Trash className="size-4" />
           </button>
         </MessageAction>
         <MessageAction tooltip="Retry" side="bottom" delayDuration={0}>

@@ -112,7 +112,6 @@ export class AIChatAgent<Env = unknown, State = unknown> extends Agent<
           },
           [connection.id]
         );
-
         await this.persistMessages(transformedMessages, [connection.id]);
 
         this.observability?.emit(
@@ -250,6 +249,7 @@ export class AIChatAgent<Env = unknown, State = unknown> extends Agent<
     messages: ChatMessage[],
     excludeBroadcastIds: string[] = []
   ) {
+    this.sql`delete from cf_ai_chat_agent_messages`;
     for (const message of messages) {
       this.sql`
         insert into cf_ai_chat_agent_messages (id, message)

@@ -1,13 +1,14 @@
-import { ChatRequestOptions, type UIMessage as MessageType } from "ai";
+import { ChatRequestOptions } from "ai";
 import { AssistantMessage } from "./assistant-message";
 import { UserMessage } from "./user-message";
 import { useState } from "react";
+import { type ChatMessage } from "@/types/ai-types";
 
 type MessageProps = {
   children: string;
   id: string;
-  variant: MessageType["role"];
-  parts: MessageType["parts"];
+  variant: ChatMessage["role"];
+  parts: ChatMessage["parts"];
   addToolResult: ({
     toolCallId,
     result,
@@ -22,7 +23,7 @@ type MessageProps = {
       messageId?: string;
     } & ChatRequestOptions
   ) => Promise<void>;
-  handleDeleteMessage: (messageId: string) => void;
+  metadata?: ChatMessage["metadata"];
 };
 export const Message = ({
   children,
@@ -33,7 +34,7 @@ export const Message = ({
   status,
   isLastMessage,
   regenerate,
-  handleDeleteMessage,
+  metadata,
 }: MessageProps) => {
   const [copied, setCopied] = useState(false);
   const isAssistant = variant === "assistant";
@@ -54,7 +55,7 @@ export const Message = ({
       id={id}
       status={status}
       isLastMessage={isLastMessage}
-      handleDeleteMessage={handleDeleteMessage}
+      metadata={metadata}
     />
   ) : (
     <UserMessage
@@ -63,7 +64,6 @@ export const Message = ({
       id={id}
       copied={copied}
       copyToClipboard={copyToClipboard}
-      handleDeleteMessage={handleDeleteMessage}
     />
   );
 };
