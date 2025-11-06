@@ -148,7 +148,9 @@ export const AssistantMessage = ({
                   }
                 >
                   <ReasoningTrigger />
-                  <ReasoningContent>{part.text}</ReasoningContent>
+                  <ReasoningContent className="text-muted-foreground">
+                    {part.text}
+                  </ReasoningContent>
                 </Reasoning>
               );
             }
