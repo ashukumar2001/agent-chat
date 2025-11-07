@@ -1,21 +1,24 @@
 import dotenv from "dotenv";
 import { type Config } from "drizzle-kit";
-dotenv.config({ path: process.env.CLOUDFLARE_ENV === "prod" ? ".dev.vars.prod" : ".dev.vars.dev" });
-
+dotenv.config({
+  path:
+    process.env.CLOUDFLARE_ENV === "prod" ? ".dev.vars.prod" : ".dev.vars.dev",
+});
+console.log(process.env.CLOUDFLARE_ENV, process.env);
 const getDbConfiguration = () => {
-    return {
-        driver: 'd1-http',
-        dbCredentials: {
-            accountId: process.env.CLOUDFLARE_ACCOUNT_ID!,
-            databaseId: process.env.CLOUDFLARE_DATABASE_ID!,
-            token: process.env.CLOUDFLARE_D1_TOKEN!
-        }
-    }
+  return {
+    driver: "d1-http",
+    dbCredentials: {
+      accountId: process.env.CLOUDFLARE_ACCOUNT_ID!,
+      databaseId: process.env.CLOUDFLARE_DATABASE_ID!,
+      token: process.env.CLOUDFLARE_D1_TOKEN!,
+    },
+  };
 };
 const dbConfig = getDbConfiguration();
 export default {
-    out: "./src/worker/drizzle",
-    schema: "./src/worker/db/schema.ts",
-    dialect: "sqlite",
-    ...dbConfig
-} as Config
+  out: "./src/worker/drizzle",
+  schema: "./src/worker/db/schema.ts",
+  dialect: "sqlite",
+  ...dbConfig,
+} as Config;

@@ -79,7 +79,7 @@
     "zod": "^4.0.17"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "^1.12.3",
+    "@cloudflare/vite-plugin": "^1.14.0",
     "@eslint/js": "9.25.1",
     "@tailwindcss/typography": "^0.5.16",
     "@tanstack/router-cli": "^1.119.0",
@@ -100,15 +100,15 @@
     "tw-animate-css": "^1.2.9",
     "typescript": "5.8.3",
     "typescript-eslint": "8.31.0",
-    "vite": "6.3.2",
-    "wrangler": "^4.34.0"
+    "vite": "7.2.2",
+    "wrangler": "^4.46.0"
   },
   "scripts": {
     "build:prod": "tsc -b && CLOUDFLARE_ENV=prod vite build",
     "build": "tsc -b && CLOUDFLARE_ENV=dev vite build",
     "cf-check-size": "tsc && vite build && wrangler deploy --dry-run",
     "deploy:prod": "npm run build:prod && wrangler deploy",
-    "deploy": "npm run build && CLOUDFLARE_ENV=dev wrangler deploy",
+    "deploy": "npm run build && wrangler deploy",
     "dev": "CLOUDFLARE_ENV=dev vite",
     "lint": "eslint .",
     "preview": "npm run build && vite preview",
@@ -118,7 +118,7 @@
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:studio": "CLOUDFLARE_ENV=dev drizzle-kit studio",
-    "db:migrate-local": "wrangler d1 migrations apply my-db-name -e dev",
+    "db:migrate-local": "wrangler d1 migrations apply eddy-ai-chat-db-dev -e dev",
     "db:migrate:dev": "CLOUDFLARE_ENV=dev drizzle-kit migrate",
     "db:migrate:prod": "CLOUDFLARE_ENV=prod drizzle-kit migrate"
   },

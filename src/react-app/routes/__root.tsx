@@ -1,10 +1,6 @@
 import { AppSidebar } from "@/components/app-sidebar";
 import { AppSidebarTrigger } from "@/components/app-sidebar/sidebar-trigger";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { Outlet, createRootRoute } from "@tanstack/react-router";
 import { ThemeProvider } from "next-themes";

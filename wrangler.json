@@ -43,9 +43,9 @@
       ],
       "d1_databases": [
         {
-          "binding": "DB",
-          "database_name": "my-db-name",
-          "database_id": "9cc06525-7e6f-4b34-a1f7-3a055337b9fb",
+          "binding": "EDDY_AI_CHAT_DB",
+          "database_name": "eddy-ai-chat-db-dev",
+          "database_id": "52ed4e35-8ac0-464b-a569-fc788bdbac3c",
           "migrations_dir": "./src/worker/drizzle"
         }
       ],
@@ -77,9 +77,9 @@
       ],
       "d1_databases": [
         {
-          "binding": "DB",
-          "database_name": "my-db-name",
-          "database_id": "9cc06525-7e6f-4b34-a1f7-3a055337b9fb",
+          "binding": "EDDY_AI_CHAT_DB",
+          "database_name": "eddy-ai-chat-db-prod",
+          "database_id": "0ddb42c0-1235-44fd-9556-568069362f0e",
           "migrations_dir": "./src/worker/drizzle"
         }
       ],

@@ -64,11 +64,17 @@ export class ChatAgent extends AIChatAgent<Env> {
     if (modelConfig.apiSdk) {
       modelInstance = modelConfig.apiSdk(apiKey);
     } else {
-      // Fallback to Google SDK if no API key is configured
-      const google = createGoogleGenerativeAI({
-        apiKey: this.env.GEMINI_API_KEY,
-      });
-      modelInstance = google(modelConfig.id);
+      if (!!this.env.GEMINI_API_KEY) {
+        // Fallback to Google SDK if no API key is configured
+        const google = createGoogleGenerativeAI({
+          apiKey: this.env.GEMINI_API_KEY,
+        });
+        modelInstance = google(modelConfig.id);
+      } else {
+        throw new Error(
+          `No API key configured for provider ${modelConfig.provider}`
+        );
+      }
     }
     // Use streamText directly and return with metadata
     const result = streamText({

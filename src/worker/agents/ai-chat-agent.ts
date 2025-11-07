@@ -215,15 +215,15 @@ export class AIChatAgent<Env = unknown, State = unknown> extends Agent<
 
   /**
    * Handle incoming chat messages and generate a response
-   * @param onFinish Callback to be called when the response is finished
+   * @param _onFinish Callback to be called when the response is finished
    * @param options.signal A signal to pass to any child requests which can be used to cancel them
    * @returns Response to send to the client or undefined
    */
   async onChatMessage(
     // biome-ignore lint/correctness/noUnusedFunctionParameters: overridden later
-    onFinish: StreamTextOnFinishCallback<ToolSet>,
+    _onFinish: StreamTextOnFinishCallback<ToolSet>,
     // biome-ignore lint/correctness/noUnusedFunctionParameters: overridden later
-    options?: {
+    _options?: {
       abortSignal: AbortSignal | undefined;
       config?: Record<string, unknown>;
     }

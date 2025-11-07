@@ -36,8 +36,8 @@ export function AppSidebar() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   return (
     <Sidebar collapsible="offcanvas">
-      <SidebarHeader className="flex-col flex space-y-3">
-        <h1 className="text-xl group-data-[state=collapsed]:opacity-0 transition-all group-data-[state=expanded]:opacity-100 group-data-[state=expanded]:delay-150 text-center">
+      <SidebarHeader className="flex-col flex">
+        <h1 className="text-xl group-data-[state=collapsed]:opacity-0 h-8 flex items-center transition-all group-data-[state=expanded]:opacity-100 group-data-[state=expanded]:delay-150">
           Eddy
         </h1>
         <Button
