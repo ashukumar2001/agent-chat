@@ -15,7 +15,7 @@ import { useChats } from "@/hooks/use-chats";
 import { authClient } from "@/lib/auth-client";
 import { LogInIcon, MoreHorizontal, PencilIcon, TrashIcon } from "lucide-react";
 import { Button } from "../ui/button";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useChatSession } from "@/hooks/use-chat-session";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import {
@@ -26,12 +26,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SettingsDialog } from "@/components/settings";
 import { useState } from "react";
-import { TextMorph } from "../motion-primitves/text-morph";
 
 export function AppSidebar() {
+  const navigate = useNavigate();
   const { data: userSessionData } = authClient.useSession();
-  const { chats, createNewChatMutation, deleteChatMutation, isLoading } =
-    useChats(userSessionData?.user?.id);
+  const { chats, deleteChatMutation, isLoading } = useChats(
+    userSessionData?.user?.id
+  );
   const { chatId } = useChatSession();
   const [settingsOpen, setSettingsOpen] = useState(false);
   return (
@@ -42,16 +43,10 @@ export function AppSidebar() {
         </h1>
         <Button
           onClick={() => {
-            createNewChatMutation.mutate({
-              name: "New Chat",
-            });
+            navigate({ to: "/" });
           }}
         >
-          <TextMorph transition={{ duration: 0.1 }}>
-            {createNewChatMutation.isPending
-              ? "Creating new chat..."
-              : "New chat"}
-          </TextMorph>
+          New Chat
         </Button>
       </SidebarHeader>
       <SidebarContent>
@@ -114,7 +109,7 @@ export function AppSidebar() {
           <>
             <Button
               variant="ghost"
-              className="justify-start px-3 h-[56px] w-full"
+              className="justify-start px-3 h-14 w-full"
               onClick={() => setSettingsOpen(true)}
             >
               <Avatar>

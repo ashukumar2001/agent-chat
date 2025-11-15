@@ -93,7 +93,7 @@ export const ChatBox = ({
       </ChatContainer>
       {status !== "streaming" && (
         <div className="absolute bottom-0 w-full max-w-3xl">
-          <div className="absolute top-[-48px] right-[24px]">
+          <div className="absolute -top-12 right-6">
             <ScrollButton containerRef={containerRef} scrollRef={bottomRef} />
           </div>
         </div>

@@ -10,14 +10,31 @@ import { toolsRequiringConfirmation } from "@worker/lib/utils";
 import { AITool, useAgentChat } from "agents/ai-react";
 import { ChatRequestOptions, isToolUIPart } from "ai";
 import { ChatMessage } from "@/types/ai-types";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
 
 export const Chat = ({
   chatId,
   userId,
 }: {
-  chatId: string;
+  chatId?: string;
   userId: string;
 }) => {
+  const navigate = useNavigate();
+  const routerState = useRouterState({
+    select(state) {
+      return {
+        message: state.location.state?.message,
+        chatConfig: state.location.state?.chatConfig,
+        pathname: state.location.pathname,
+      };
+    },
+  });
+  const { createNewChatMutation, getChatById, updateChatMutation } =
+    useChats(userId);
+  const currentChat = useMemo(
+    () => (chatId ? getChatById(chatId) : null),
+    [chatId, getChatById]
+  );
   const agent = useAgent({
     agent: "chat-agent",
     name: `${userId}:${chatId}`,
@@ -55,7 +72,11 @@ export const Chat = ({
       .find((part: any) => part.toolCallId === toolCallId)
       ?.type?.replace("tool-", "");
     if (toolName) {
-      const _chatId = await ensureChatExists(chatId, agentInput);
+      const _chatId = await ensureChatExists(
+        currentChat?.id,
+        agentInput,
+        chatId
+      );
       if (!_chatId) return;
       await originalAddToolResult({
         tool: toolName,
@@ -64,8 +85,7 @@ export const Chat = ({
       });
     }
   };
-  const { createNewChatMutation, getChatById, updateChatMutation } =
-    useChats(userId);
+
   // Tools requiring confirmation are auto-detected by useAgentChat from tools object
   // Tools without execute function need confirmation (getWeatherInformation)
   // Tools with execute function are automatic (getLocalTime)
@@ -74,10 +94,7 @@ export const Chat = ({
       (part) => isToolUIPart(part) && part.state === "input-available"
     )
   );
-  const currentChat = useMemo(
-    () => (chatId ? getChatById(chatId) : null),
-    [chatId, getChatById]
-  );
+
   const [selectedModel, setSelectedModel] = useState(
     currentChat?.model || DEFUALT_MODEL
   );
@@ -104,11 +121,15 @@ export const Chat = ({
       }
     }
   };
-  const ensureChatExists = async (chatId: string, input: string) => {
-    if (!currentChat) {
+  const ensureChatExists = async (
+    chatId: string | undefined,
+    input: string,
+    customChatId?: string
+  ) => {
+    if (!chatId) {
       const newChat = await createNewChatMutation.mutateAsync({
         model: selectedModel,
-        id: chatId,
+        id: customChatId,
         name: input,
       });
       if (!newChat) return;
@@ -120,14 +141,14 @@ export const Chat = ({
         name: input,
       });
     }
-    return currentChat.id;
+    return chatId;
   };
   const handleRetryMessage = async ({
     messageId,
   }: {
     messageId?: string;
   } & ChatRequestOptions) => {
-    const _chatId = await ensureChatExists(chatId, agentInput);
+    const _chatId = await ensureChatExists(currentChat?.id, agentInput, chatId);
     regenerate({
       messageId,
       body: {
@@ -140,23 +161,33 @@ export const Chat = ({
       },
     });
   };
-  const onSubmit = async () => {
+  const onSubmit = async (
+    input?: string,
+    chatConfig?: {
+      modelId?: string;
+      webSearchEnabled?: boolean;
+    }
+  ) => {
     setIsSubmitting(true);
     try {
-      const _chatId = await ensureChatExists(chatId, agentInput);
+      const _chatId = await ensureChatExists(
+        currentChat?.id,
+        input || agentInput,
+        chatId
+      );
       if (!_chatId) return;
 
       sendMessage(
         {
-          text: agentInput,
+          text: input || agentInput,
         },
         {
           body: {
             config: {
               userId,
               chatId: _chatId,
-              model: selectedModel,
-              webSearch: isWebSearchEnabled,
+              model: chatConfig?.modelId || selectedModel,
+              webSearch: chatConfig?.webSearchEnabled || isWebSearchEnabled,
             },
           },
         }
@@ -168,6 +199,15 @@ export const Chat = ({
       setIsSubmitting(false);
     }
   };
+
+  useEffect(() => {
+    if (routerState.message) {
+      onSubmit(routerState.message, routerState.chatConfig).then(() => {
+        // Create navigation state to prevent resubmission
+        navigate({ to: routerState.pathname, replace: true });
+      });
+    }
+  }, [routerState]);
   useEffect(() => {
     console.log(agentMessages);
   }, [agentMessages]);
@@ -183,7 +223,7 @@ export const Chat = ({
   return (
     <div className="@container/main relative flex h-full flex-col items-center justify-end md:justify-center">
       <ChatBox
-        key={chatId}
+        key={currentChat?.id}
         messages={agentMessages}
         addToolResult={addToolResult}
         status={status}
@@ -191,7 +231,7 @@ export const Chat = ({
       />
       <div className="relative inset-x-0 bottom-0 z-50 mx-auto w-full max-w-3xl">
         <ChatInput
-          key={chatId}
+          key={currentChat?.id}
           value={agentInput}
           handleInputChange={(e) => setAgentInput(e.target.value)}
           handleSubmit={onSubmit}

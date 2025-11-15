@@ -66,7 +66,7 @@ export const AssistantMessage = ({
 
   return (
     <Message>
-      <div className="group flex flex-col w-full max-w-3xl flex-1 items-start gap-4 px-6 pb-2 mb-2 mx-auto">
+      <div className="group flex flex-col w-full max-w-3xl flex-1 items-start gap-4 px-0 md:px-6 pb-2 mb-2 mx-auto">
         <div className="w-full flex flex-col gap-2">
           {sources && sources.length > 0 && (
             <div className="flex gap-2 mb-2 flex-wrap">

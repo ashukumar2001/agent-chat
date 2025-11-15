@@ -23,7 +23,7 @@ function RootComponent() {
         <SidebarInset>
           <AppSidebarTrigger />
           <div className="bg-background @container/mainview flex h-full w-full">
-            <main className="@container h-[calc(100dvh-48px)] flex-grow shrink-0">
+            <main className="@container h-[calc(100dvh-48px)] grow shrink-0">
               <Outlet />
             </main>
           </div>

@@ -24,6 +24,13 @@ declare module "@tanstack/react-router" {
   interface Register {
     router: typeof router;
   }
+  interface HistoryState {
+    message?: string;
+    chatConfig?: {
+      modelId?: string;
+      webSearchEnabled?: boolean;
+    };
+  }
 }
 
 // Render the app

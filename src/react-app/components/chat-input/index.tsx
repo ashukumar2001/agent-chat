@@ -14,7 +14,7 @@ import { ChatStatus } from "ai";
 type ChatInputProps = {
   value: string;
   handleSubmit: () => void;
-  pendingToolCallConfirmation: boolean;
+  pendingToolCallConfirmation?: boolean;
   handleInputChange: (
     e:
       | React.ChangeEvent<HTMLInputElement>
@@ -24,21 +24,21 @@ type ChatInputProps = {
   handleModelChange: (model: string) => void;
   isWebSearchEnabled: boolean;
   setIsWebSearchEnabled: React.Dispatch<React.SetStateAction<boolean>>;
-  stop: () => Promise<void>;
-  status: ChatStatus;
+  stop?: () => Promise<void>;
+  status?: ChatStatus;
   isSubmitting: boolean;
 };
 export const ChatInput = ({
   value,
   handleInputChange,
   handleSubmit,
-  pendingToolCallConfirmation,
+  pendingToolCallConfirmation = false,
   selectedModel,
   handleModelChange,
   isWebSearchEnabled,
   setIsWebSearchEnabled,
   status,
-  stop,
+  stop = async () => {},
   isSubmitting,
 }: ChatInputProps) => {
   const modelConfig = MODELS.find((model) => model.id === selectedModel);
@@ -113,7 +113,7 @@ export const ChatInput = ({
               variant="default"
               size="icon"
               className="h-8 w-8 rounded-full"
-              onClick={isStreaming ? stop : handleSubmit}
+              onClick={isStreaming ? stop : () => handleSubmit()}
               disabled={
                 !isStreaming
                   ? pendingToolCallConfirmation ||

@@ -72,11 +72,13 @@ export const chats = router({
 
       if (response.success) {
         try {
-          const doId = ctx.workerContext.env.ChatAgent.idFromName(input.chatId);
+          const doId = ctx.workerContext.env.ChatAgent.idFromName(
+            `${ctx.session?.user.id}:${input.chatId}`
+          );
           const doStub = ctx.workerContext.env.ChatAgent.get(doId);
           await doStub.destroy();
         } catch (error) {
-          console.log("error: ", error);
+          console.error("Error destroying Durable Object:", error);
         }
       }
 

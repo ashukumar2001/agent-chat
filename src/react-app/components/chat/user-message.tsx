@@ -29,7 +29,7 @@ export const UserMessage = ({
   return (
     <Message
       className={cn(
-        "group flex w-full max-w-3xl flex-col items-end gap-2 px-6 pb-2 mx-auto"
+        "group flex w-full max-w-3xl flex-col items-end gap-2 px-0 md:px-6 pb-2 mx-auto"
       )}
     >
       <MessageContent
