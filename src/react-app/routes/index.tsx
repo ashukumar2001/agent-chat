@@ -6,6 +6,7 @@ import { PromptSuggestion } from "@/components/prompt-kit/prompt-suggestion";
 import { useChats } from "@/hooks/use-chats";
 import { useSession } from "@/hooks/useSession";
 import { toast } from "sonner";
+import { motion } from "motion/react";
 export const Route = createFileRoute("/")({
   component: RouteComponent,
 });
@@ -51,8 +52,20 @@ function RouteComponent() {
     <div className="@container/main relative flex h-full flex-col items-center justify-end md:justify-center">
       <div className="relative flex h-full w-full flex-col items-center overflow-x-hidden overflow-y-auto justify-center">
         <div className="group flex w-full max-w-3xl flex-col space-y-4 px-6 mx-auto">
-          <h1 className="text-3xl">How can I help you?</h1>
-          <div className="flex flex-wrap gap-2">
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="text-3xl"
+          >
+            How can I help you?
+          </motion.h1>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="flex flex-wrap gap-2"
+          >
             <PromptSuggestion onClick={() => setAgentInput("Tell me a joke")}>
               Tell me a joke
             </PromptSuggestion>
@@ -77,7 +90,7 @@ function RouteComponent() {
             >
               Code a React component
             </PromptSuggestion>
-          </div>
+          </motion.div>
         </div>
       </div>
       <div className="relative inset-x-0 bottom-0 z-50 mx-auto w-full max-w-3xl">
