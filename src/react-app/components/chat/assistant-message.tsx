@@ -86,7 +86,11 @@ export const AssistantMessage = ({
           {parts?.map((part, idx) => {
             // In AI SDK v5, handle tool-call parts
             if (part.type === "text") {
-              return <Response key={idx}>{part.text}</Response>;
+              return (
+                <Response isAnimating={status === "streaming"} key={idx}>
+                  {part.text}
+                </Response>
+              );
             } else if (isToolUIPart(part)) {
               const toolCallStatus = toolCallStatusList?.find(
                 (status) => status.data.toolCallId === part.toolCallId
