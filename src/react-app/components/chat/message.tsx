@@ -14,7 +14,7 @@ type MessageProps = {
     result,
   }: {
     toolCallId: string;
-    result: any;
+    result: unknown;
   }) => void;
   status: "streaming" | "ready" | "submitted" | "error";
   isLastMessage: boolean;

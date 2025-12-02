@@ -13,7 +13,7 @@ type ChatBoxProps = {
     result,
   }: {
     toolCallId: string;
-    result: any;
+    result: unknown;
   }) => void;
   regenerate: (
     props: {

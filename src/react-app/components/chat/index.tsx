@@ -8,7 +8,7 @@ import { useChats } from "@/hooks/use-chats";
 import { toast } from "sonner";
 import { toolsRequiringConfirmation } from "@worker/lib/utils";
 import { AITool, useAgentChat } from "agents/ai-react";
-import { ChatRequestOptions, isToolUIPart } from "ai";
+import { ChatRequestOptions, isToolUIPart, ToolUIPart } from "ai";
 import { ChatMessage } from "@/types/ai-types";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 
@@ -42,7 +42,7 @@ export const Chat = ({
   const {
     messages: agentMessages,
     sendMessage,
-    addToolResult: originalAddToolResult,
+    addToolOutput: originalAddToolResult,
     status,
     stop,
     regenerate,
@@ -64,12 +64,16 @@ export const Chat = ({
     result,
   }: {
     toolCallId: string;
-    result: any;
+    result: unknown;
   }) => {
     // Extract tool name from the message parts
     const toolName = agentMessages
       .flatMap((m) => m.parts || [])
-      .find((part: any) => part.toolCallId === toolCallId)
+      .find(
+        (part) =>
+          part.type.startsWith("tool-") &&
+          (part as ToolUIPart).toolCallId === toolCallId
+      )
       ?.type?.replace("tool-", "");
     if (toolName) {
       const _chatId = await ensureChatExists(
@@ -194,6 +198,7 @@ export const Chat = ({
       );
       setAgentInput("");
     } catch (error) {
+      console.warn(error);
       toast.error("Failed to send message");
     } finally {
       setIsSubmitting(false);
@@ -207,6 +212,7 @@ export const Chat = ({
         navigate({ to: routerState.pathname, replace: true });
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routerState]);
   useEffect(() => {
     console.log(agentMessages);
