@@ -18,17 +18,6 @@
   "assets": {
     "not_found_handling": "single-page-application"
   },
-  /**
-   * Smart Placement
-   * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
-   */
-  // "placement": { "mode": "smart" },
-  /**
-   * Bindings
-   * Bindings allow your Worker to interact with resources on the Cloudflare Developer Platform, including
-   * databases, object storage, AI inference, real-time communication and more.
-   * https://developers.cloudflare.com/workers/runtime-apis/bindings/
-   */
   "env": {
     "dev": {
       "vars": {
@@ -37,8 +26,8 @@
       "durable_objects": {
         "bindings": [
           {
-            "name": "MyChatAgent",
-            "class_name": "MyChatAgent"
+            "name": "ChatAgent",
+            "class_name": "ChatAgent"
           },
           {
             "name": "UserSettings",
@@ -49,14 +38,23 @@
       "migrations": [
         {
           "tag": "v0",
-          "new_sqlite_classes": ["MyChatAgent", "UserSettings"]
+          "new_sqlite_classes": ["ChatAgent", "UserSettings"]
+        },
+        {
+          "tag": "v1",
+          "renamed_classes": [
+            {
+              "from": "MyChatAgent",
+              "to": "ChatAgent"
+            }
+          ]
         }
       ],
       "d1_databases": [
         {
-          "binding": "DB",
-          "database_name": "my-db-name",
-          "database_id": "9cc06525-7e6f-4b34-a1f7-3a055337b9fb",
+          "binding": "EDDY_AI_CHAT_DB",
+          "database_name": "eddy-ai-chat-db-dev",
+          "database_id": "52ed4e35-8ac0-464b-a569-fc788bdbac3c",
           "migrations_dir": "./src/worker/drizzle"
         }
       ],
@@ -71,8 +69,8 @@
       "durable_objects": {
         "bindings": [
           {
-            "name": "MyChatAgent",
-            "class_name": "MyChatAgent"
+            "name": "ChatAgent",
+            "class_name": "ChatAgent"
           },
           {
             "name": "UserSettings",
@@ -83,14 +81,14 @@
       "migrations": [
         {
           "tag": "v0",
-          "new_sqlite_classes": ["MyChatAgent", "UserSettings"]
+          "new_sqlite_classes": ["ChatAgent", "UserSettings"]
         }
       ],
       "d1_databases": [
         {
-          "binding": "DB",
-          "database_name": "my-db-name",
-          "database_id": "9cc06525-7e6f-4b34-a1f7-3a055337b9fb",
+          "binding": "EDDY_AI_CHAT_DB",
+          "database_name": "eddy-ai-chat-db-prod",
+          "database_id": "0ddb42c0-1235-44fd-9556-568069362f0e",
           "migrations_dir": "./src/worker/drizzle"
         }
       ],
@@ -99,23 +97,4 @@
       }
     }
   }
-  /**
-   * Environment Variables
-   * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
-   */
-  // "vars": { "MY_VARIABLE": "production_value" },
-  /**
-   * Note: Use secrets to store sensitive data.
-   * https://developers.cloudflare.com/workers/configuration/secrets/
-   */
-  /**
-   * Static Assets
-   * https://developers.cloudflare.com/workers/static-assets/binding/
-   */
-  // "assets": { "directory": "./public/", "binding": "ASSETS" },
-  /**
-   * Service Bindings (communicate between multiple Workers)
-   * https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
-   */
-  // "services": [{ "binding": "MY_SERVICE", "service": "my-service" }]
 }

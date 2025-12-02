@@ -1,22 +1,29 @@
-import { type UIMessage as MessageType } from "ai";
+import { ChatRequestOptions } from "ai";
 import { AssistantMessage } from "./assistant-message";
 import { UserMessage } from "./user-message";
 import { useState } from "react";
+import { type ChatMessage } from "@/types/ai-types";
 
 type MessageProps = {
   children: string;
   id: string;
-  variant: MessageType["role"];
-  parts: MessageType["parts"];
+  variant: ChatMessage["role"];
+  parts: ChatMessage["parts"];
   addToolResult: ({
     toolCallId,
     result,
   }: {
     toolCallId: string;
-    result: any;
+    result: unknown;
   }) => void;
   status: "streaming" | "ready" | "submitted" | "error";
   isLastMessage: boolean;
+  regenerate: (
+    props: {
+      messageId?: string;
+    } & ChatRequestOptions
+  ) => Promise<void>;
+  metadata?: ChatMessage["metadata"];
 };
 export const Message = ({
   children,
@@ -26,6 +33,8 @@ export const Message = ({
   id,
   status,
   isLastMessage,
+  regenerate,
+  metadata,
 }: MessageProps) => {
   const [copied, setCopied] = useState(false);
   const isAssistant = variant === "assistant";
@@ -46,10 +55,13 @@ export const Message = ({
       id={id}
       status={status}
       isLastMessage={isLastMessage}
+      metadata={metadata}
     />
   ) : (
     <UserMessage
+      regenerate={regenerate}
       children={children}
+      id={id}
       copied={copied}
       copyToClipboard={copyToClipboard}
     />
