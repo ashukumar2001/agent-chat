@@ -8,48 +8,71 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-// Import Routes
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as ChatIndexRouteImport } from './routes/chat/index'
+import { Route as ChatChatIdIndexRouteImport } from './routes/chat/$chatId/index'
+import { Route as ApiAuthCallbackProviderRouteImport } from './routes/api/auth/callback/$provider'
 
-import { Route as rootRoute } from './routes/__root'
-import { Route as ProfileImport } from './routes/profile'
-import { Route as IndexImport } from './routes/index'
-import { Route as ChatIndexImport } from './routes/chat/index'
-import { Route as ChatChatIdImport } from './routes/chat/$chatId'
-import { Route as ApiAuthCallbackProviderImport } from './routes/api/auth/callback/$provider'
-
-// Create/Update Routes
-
-const ProfileRoute = ProfileImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const IndexRoute = IndexImport.update({
+const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const ChatIndexRoute = ChatIndexImport.update({
+const ChatIndexRoute = ChatIndexRouteImport.update({
   id: '/chat/',
   path: '/chat/',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const ChatChatIdRoute = ChatChatIdImport.update({
-  id: '/chat/$chatId',
-  path: '/chat/$chatId',
-  getParentRoute: () => rootRoute,
+const ChatChatIdIndexRoute = ChatChatIdIndexRouteImport.update({
+  id: '/chat/$chatId/',
+  path: '/chat/$chatId/',
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const ApiAuthCallbackProviderRoute = ApiAuthCallbackProviderImport.update({
+const ApiAuthCallbackProviderRoute = ApiAuthCallbackProviderRouteImport.update({
   id: '/api/auth/callback/$provider',
   path: '/api/auth/callback/$provider',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
 
-// Populate the FileRoutesByPath interface
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/chat': typeof ChatIndexRoute
+  '/chat/$chatId': typeof ChatChatIdIndexRoute
+  '/api/auth/callback/$provider': typeof ApiAuthCallbackProviderRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/chat': typeof ChatIndexRoute
+  '/chat/$chatId': typeof ChatChatIdIndexRoute
+  '/api/auth/callback/$provider': typeof ApiAuthCallbackProviderRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/chat/': typeof ChatIndexRoute
+  '/chat/$chatId/': typeof ChatChatIdIndexRoute
+  '/api/auth/callback/$provider': typeof ApiAuthCallbackProviderRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths: '/' | '/chat' | '/chat/$chatId' | '/api/auth/callback/$provider'
+  fileRoutesByTo: FileRoutesByTo
+  to: '/' | '/chat' | '/chat/$chatId' | '/api/auth/callback/$provider'
+  id:
+    | '__root__'
+    | '/'
+    | '/chat/'
+    | '/chat/$chatId/'
+    | '/api/auth/callback/$provider'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  ChatIndexRoute: typeof ChatIndexRoute
+  ChatChatIdIndexRoute: typeof ChatChatIdIndexRoute
+  ApiAuthCallbackProviderRoute: typeof ApiAuthCallbackProviderRoute
+}
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
@@ -57,140 +80,39 @@ declare module '@tanstack/react-router' {
       id: '/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexImport
-      parentRoute: typeof rootRoute
-    }
-    '/profile': {
-      id: '/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof ProfileImport
-      parentRoute: typeof rootRoute
-    }
-    '/chat/$chatId': {
-      id: '/chat/$chatId'
-      path: '/chat/$chatId'
-      fullPath: '/chat/$chatId'
-      preLoaderRoute: typeof ChatChatIdImport
-      parentRoute: typeof rootRoute
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/chat/': {
       id: '/chat/'
       path: '/chat'
       fullPath: '/chat'
-      preLoaderRoute: typeof ChatIndexImport
-      parentRoute: typeof rootRoute
+      preLoaderRoute: typeof ChatIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chat/$chatId/': {
+      id: '/chat/$chatId/'
+      path: '/chat/$chatId'
+      fullPath: '/chat/$chatId'
+      preLoaderRoute: typeof ChatChatIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/auth/callback/$provider': {
       id: '/api/auth/callback/$provider'
       path: '/api/auth/callback/$provider'
       fullPath: '/api/auth/callback/$provider'
-      preLoaderRoute: typeof ApiAuthCallbackProviderImport
-      parentRoute: typeof rootRoute
+      preLoaderRoute: typeof ApiAuthCallbackProviderRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
-}
-
-// Create and export the route tree
-
-export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/profile': typeof ProfileRoute
-  '/chat/$chatId': typeof ChatChatIdRoute
-  '/chat': typeof ChatIndexRoute
-  '/api/auth/callback/$provider': typeof ApiAuthCallbackProviderRoute
-}
-
-export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/profile': typeof ProfileRoute
-  '/chat/$chatId': typeof ChatChatIdRoute
-  '/chat': typeof ChatIndexRoute
-  '/api/auth/callback/$provider': typeof ApiAuthCallbackProviderRoute
-}
-
-export interface FileRoutesById {
-  __root__: typeof rootRoute
-  '/': typeof IndexRoute
-  '/profile': typeof ProfileRoute
-  '/chat/$chatId': typeof ChatChatIdRoute
-  '/chat/': typeof ChatIndexRoute
-  '/api/auth/callback/$provider': typeof ApiAuthCallbackProviderRoute
-}
-
-export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/profile'
-    | '/chat/$chatId'
-    | '/chat'
-    | '/api/auth/callback/$provider'
-  fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/profile'
-    | '/chat/$chatId'
-    | '/chat'
-    | '/api/auth/callback/$provider'
-  id:
-    | '__root__'
-    | '/'
-    | '/profile'
-    | '/chat/$chatId'
-    | '/chat/'
-    | '/api/auth/callback/$provider'
-  fileRoutesById: FileRoutesById
-}
-
-export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  ProfileRoute: typeof ProfileRoute
-  ChatChatIdRoute: typeof ChatChatIdRoute
-  ChatIndexRoute: typeof ChatIndexRoute
-  ApiAuthCallbackProviderRoute: typeof ApiAuthCallbackProviderRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ProfileRoute: ProfileRoute,
-  ChatChatIdRoute: ChatChatIdRoute,
   ChatIndexRoute: ChatIndexRoute,
+  ChatChatIdIndexRoute: ChatChatIdIndexRoute,
   ApiAuthCallbackProviderRoute: ApiAuthCallbackProviderRoute,
 }
-
-export const routeTree = rootRoute
+export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-/* ROUTE_MANIFEST_START
-{
-  "routes": {
-    "__root__": {
-      "filePath": "__root.tsx",
-      "children": [
-        "/",
-        "/profile",
-        "/chat/$chatId",
-        "/chat/",
-        "/api/auth/callback/$provider"
-      ]
-    },
-    "/": {
-      "filePath": "index.tsx"
-    },
-    "/profile": {
-      "filePath": "profile.tsx"
-    },
-    "/chat/$chatId": {
-      "filePath": "chat/$chatId.tsx"
-    },
-    "/chat/": {
-      "filePath": "chat/index.tsx"
-    },
-    "/api/auth/callback/$provider": {
-      "filePath": "api/auth/callback/$provider.tsx"
-    }
-  }
-}
-ROUTE_MANIFEST_END */

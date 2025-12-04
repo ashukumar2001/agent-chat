@@ -11,14 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  CalendarDays,
-  Mail,
-  Shield,
-  User,
-  LogOut,
-  ArrowLeft,
-} from "lucide-react";
+import { CalendarDays, Mail, Shield, User, LogOut } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useNavigate } from "@tanstack/react-router";
 
@@ -28,10 +21,6 @@ export const ProfilePage = () => {
   const handleSignOut = async () => {
     await authClient.signOut();
     navigate({ to: "/" });
-  };
-
-  const handleGoBack = () => {
-    window.history.back();
   };
 
   const formatDate = (timestamp: Date) => {
@@ -53,7 +42,7 @@ export const ProfilePage = () => {
 
   if (isPending) {
     return (
-      <div className="container mx-auto py-8 px-4 max-w-4xl">
+      <div className="container mx-auto max-w-4xl">
         <div className="space-y-6">
           <Skeleton className="h-8 w-48" />
           <Card>
@@ -78,7 +67,7 @@ export const ProfilePage = () => {
 
   if (!user) {
     return (
-      <div className="container mx-auto py-8 px-4 max-w-4xl">
+      <div className="container mx-auto max-w-4xl">
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <User className="h-12 w-12 text-muted-foreground mb-4" />
@@ -86,7 +75,11 @@ export const ProfilePage = () => {
             <p className="text-muted-foreground text-center mb-6">
               You need to be signed in to view your profile.
             </p>
-            <Button onClick={() => navigate({ to: "/" })}>Go to Home</Button>
+            <Button
+              onClick={() => authClient.signIn.social({ provider: "github" })}
+            >
+              Sign In
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -94,25 +87,16 @@ export const ProfilePage = () => {
   }
 
   return (
-    <div className="container mx-auto py-8 px-4 max-w-4xl">
+    <div className="container mx-auto max-w-4xl">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="icon" onClick={handleGoBack}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <h1 className="text-3xl font-bold">Profile</h1>
-          </div>
-          <Button variant="outline" onClick={handleSignOut}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Sign Out
-          </Button>
+          <h1 className="text-3xl font-bold">Profile</h1>
         </div>
 
         {/* Main Profile Card */}
         <Card>
-          <CardHeader className="pb-4">
+          <CardHeader className="pb-4 space-y-3">
             <div className="flex items-center space-x-4">
               <Avatar className="h-20 w-20">
                 <AvatarImage src={user.image || undefined} alt={user.name} />
@@ -141,6 +125,10 @@ export const ProfilePage = () => {
                 </CardDescription>
               </div>
             </div>
+            <Button variant="outline" onClick={handleSignOut}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
           </CardHeader>
 
           <CardContent className="space-y-6">
@@ -161,7 +149,7 @@ export const ProfilePage = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-3">
+                {/* <div className="flex items-center space-x-3">
                   <User className="h-4 w-4 text-muted-foreground" />
                   <div>
                     <p className="text-sm font-medium">User ID</p>
@@ -169,7 +157,7 @@ export const ProfilePage = () => {
                       {user.id}
                     </p>
                   </div>
-                </div>
+                </div> */}
               </div>
 
               <div className="space-y-4">
@@ -204,12 +192,6 @@ export const ProfilePage = () => {
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">Current Session</h3>
                   <div className="grid gap-4 md:grid-cols-2">
-                    <div>
-                      <p className="text-sm font-medium">Session ID</p>
-                      <p className="text-sm text-muted-foreground font-mono">
-                        {session.id}
-                      </p>
-                    </div>
                     <div>
                       <p className="text-sm font-medium">Session Expires</p>
                       <p className="text-sm text-muted-foreground">

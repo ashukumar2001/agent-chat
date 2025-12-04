@@ -5,22 +5,31 @@ import {
   MessageActions,
   MessageContent,
 } from "../ui/message";
-import { Check, Copy, Trash } from "lucide-react";
+import { Check, Copy, RefreshCcw } from "lucide-react";
+import { ChatRequestOptions } from "ai";
 
 type UserMessageProps = {
   children: string;
   copied: boolean;
   copyToClipboard: () => void;
+  regenerate: (
+    props: {
+      messageId?: string;
+    } & ChatRequestOptions
+  ) => Promise<void>;
+  id: string;
 };
 export const UserMessage = ({
   children,
   copied,
   copyToClipboard,
+  regenerate,
+  id,
 }: UserMessageProps) => {
   return (
     <Message
       className={cn(
-        "group flex w-full max-w-3xl flex-col items-end gap-2 px-6 pb-2 mx-auto"
+        "group flex w-full max-w-3xl flex-col items-end gap-2 px-0 md:px-6 pb-2 mx-auto"
       )}
     >
       <MessageContent
@@ -48,14 +57,14 @@ export const UserMessage = ({
             )}
           </button>
         </MessageAction>
-        <MessageAction tooltip="Delete" side="bottom" delayDuration={0}>
+        <MessageAction tooltip="Retry" side="bottom" delayDuration={0}>
           <button
             className="flex h-8 w-8 items-center justify-center rounded-full bg-transparent transition"
-            aria-label="Delete"
-            // onClick={handleDelete}
+            aria-label="Retry"
             type="button"
+            onClick={() => regenerate({ messageId: id })}
           >
-            <Trash className="size-4" />
+            <RefreshCcw className="size-4" />
           </button>
         </MessageAction>
       </MessageActions>

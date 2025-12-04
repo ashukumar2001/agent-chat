@@ -1,5 +1,6 @@
 import { AppSidebar } from "@/components/app-sidebar";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { AppSidebarTrigger } from "@/components/app-sidebar/sidebar-trigger";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { Outlet, createRootRoute } from "@tanstack/react-router";
 import { ThemeProvider } from "next-themes";
@@ -16,17 +17,18 @@ function RootComponent() {
       enableSystem
       disableTransitionOnChange
     >
-      <div className="h-dvh overflow-hidden isolate">
-        <Toaster />
-        <SidebarProvider>
-          <AppSidebar />
-          <div className="bg-background @container/mainview relative flex h-full w-full">
-            <main className="@container relative h-dvh w-0 flex-shrink flex-grow">
+      <Toaster />
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset>
+          <AppSidebarTrigger />
+          <div className="bg-background @container/mainview flex h-full w-full">
+            <main className="@container h-[calc(100dvh-48px)] grow shrink-0">
               <Outlet />
             </main>
           </div>
-        </SidebarProvider>
-      </div>
+        </SidebarInset>
+      </SidebarProvider>
     </ThemeProvider>
   );
 }

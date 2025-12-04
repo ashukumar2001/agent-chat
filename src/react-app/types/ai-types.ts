@@ -1,86 +1,10 @@
-// import type { UIMessage as ChatMessage } from "@ai-sdk/ui-utils";
-import type { UIMessage as ChatMessage } from "ai";
+import { UIDataTypes, UIMessage, UITools } from "ai";
 
-/**
- * Enum for message types used in Agent communication
- */
-export enum MessageType {
-    /** Indicates this message contains updated chat messages */
-    CF_AGENT_CHAT_MESSAGES = "cf_agent_chat_messages",
-    /** Indicates this message is a response to a chat request */
-    CF_AGENT_USE_CHAT_RESPONSE = "cf_agent_use_chat_response",
-    /** Indicates this message is a command to clear chat history */
-    CF_AGENT_CHAT_CLEAR = "cf_agent_chat_clear",
-    /** Indicates this message is a request to the chat API */
-    CF_AGENT_USE_CHAT_REQUEST = "cf_agent_use_chat_request",
-    /** Indicates the user wants to stop generation of this message */
-    CF_AGENT_CHAT_REQUEST_CANCEL = "cf_agent_chat_request_cancel",
-
-    CF_AGENT_MCP_SERVERS = "cf_agent_mcp_servers",
-    CF_AGENT_STATE = "cf_agent_state",
-    RPC = "rpc"
-}
-
-/**
- * Types of messages sent from the Agent to clients
- */
-export type OutgoingMessage =
-    | {
-        /** Indicates this message contains updated chat messages */
-        type: MessageType.CF_AGENT_CHAT_MESSAGES;
-        /** Array of chat messages */
-        messages: ChatMessage[];
-    }
-    | {
-        /** Indicates this message is a response to a chat request */
-        type: MessageType.CF_AGENT_USE_CHAT_RESPONSE;
-        /** Unique ID of the request this response corresponds to */
-        id: string;
-        /** Content body of the response */
-        body: string;
-        /** Whether this is the final chunk of the response */
-        done: boolean;
-    }
-    | {
-        /** Indicates this message contains updated chat messages */
-        type: MessageType.CF_AGENT_CHAT_MESSAGES;
-        /** Array of chat messages */
-        messages: ChatMessage[];
-    }
-    | {
-        /** Indicates this message is a command to clear chat history */
-        type: MessageType.CF_AGENT_CHAT_CLEAR;
-    };
-
-/**
- * Types of messages sent from clients to the Agent
- */
-export type IncomingMessage =
-    | {
-        /** Indicates this message is a request to the chat API */
-        type: MessageType.CF_AGENT_USE_CHAT_REQUEST;
-        /** Unique ID for this request */
-        id: string;
-        /** Request initialization options */
-        init: Pick<
-            RequestInit,
-            | "method"
-            | "headers"
-            | "body"
-        >;
-    }
-    | {
-        /** Indicates this message is a command to clear chat history */
-        type: MessageType.CF_AGENT_CHAT_CLEAR;
-    }
-    | {
-        /** Indicates this message contains updated chat messages */
-        type: MessageType.CF_AGENT_CHAT_MESSAGES;
-        /** Array of chat messages */
-        messages: ChatMessage[];
-    }
-    | {
-        /** Indicates the user wants to stop generation of this message */
-        type: MessageType.CF_AGENT_CHAT_REQUEST_CANCEL;
-        id: string;
-    };
+export type ChatMessage = UIMessage<
+  {
+    model: string;
+    totalTokens: number;
+  },
+  UIDataTypes,
+  UITools
+>;

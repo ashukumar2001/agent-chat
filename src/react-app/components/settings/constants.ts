@@ -1,4 +1,4 @@
-import { Settings, Palette, Key, Cpu, Zap } from "lucide-react";
+import { Settings, Palette, Key, } from "lucide-react";
 import OpenRouterIcon from "@/components/icons/openrouter";
 import OpenAIIcon from "@/components/icons/openai";
 import MistralIcon from "@/components/icons/mistral";
@@ -83,14 +83,14 @@ export const SETTINGS_SECTIONS: SettingsSectionItem[] = [
         label: "API Keys",
         icon: Key,
     },
-    {
-        id: "models",
-        label: "Models",
-        icon: Cpu,
-    },
-    {
-        id: "connections",
-        label: "Connections",
-        icon: Zap,
-    },
+    // {
+    //     id: "models",
+    //     label: "Models",
+    //     icon: Cpu,
+    // },
+    // {
+    //     id: "connections",
+    //     label: "Connections",
+    //     icon: Zap,
+    // },
 ];

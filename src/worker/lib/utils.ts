@@ -1,53 +1,183 @@
-import type {
-    UIMessage,
-} from "ai";
+import type { UIMessage } from "@ai-sdk/react";
+import type { UIMessageStreamWriter, ToolSet } from "ai";
+import type { z } from "zod";
+
+// Helper type to infer tool arguments from Zod schema
+type InferToolArgs<T> = T extends { inputSchema: infer S }
+  ? S extends z.ZodType
+    ? z.infer<S>
+    : never
+  : never;
+/**
+ *  tool implementation
+ */
+export const executions = {
+  getWeatherInformation: async (args: unknown): Promise<string> => {
+    const { city } = args as { city: string };
+    const conditions = ["sunny", "cloudy", "rainy", "snowy"];
+    // Simulate an API call delay
+    await new Promise((res) => setTimeout(res, 2000));
+    return `The weather in ${city} is ${
+      conditions[Math.floor(Math.random() * conditions.length)]
+    }.`;
+  },
+};
 
 /**
- * Cleans tool calls from messages to prevent compatibility issues when switching between LLMs
- * @param messages - Array of messages to clean
- * @returns Cleaned messages array with tool calls removed
+ * Tools that require Human-In-The-Loop
  */
-export function cleanMessagesForTools<T extends UIMessage>(messages: T[]): T[] {
-    return messages.map((message) => {
-        // If message doesn't have parts, return as is
-        if (!message.parts || !Array.isArray(message.parts)) {
-            return message;
+export const toolsRequiringConfirmation = Object.keys(executions);
+// Type guard to check if part has required properties
+function isToolConfirmationPart(part: unknown): part is {
+  type: string;
+  output: string;
+  input?: Record<string, unknown>;
+} {
+  return (
+    typeof part === "object" &&
+    part !== null &&
+    "type" in part &&
+    "output" in part &&
+    typeof (part as { type: unknown }).type === "string" &&
+    typeof (part as { output: unknown }).output === "string"
+  );
+}
+
+export const APPROVAL = {
+  NO: "No, denied.",
+  YES: "Yes, confirmed.",
+} as const;
+
+/**
+ * Check if a message contains tool confirmations
+ */
+export function hasToolConfirmation(message: UIMessage): boolean {
+  return (
+    message?.parts?.some(
+      (part) =>
+        part.type?.startsWith("tool-") &&
+        toolsRequiringConfirmation.includes(part.type?.slice("tool-".length)) &&
+        "output" in part
+    ) || false
+  );
+}
+
+/**
+ * Processes tool invocations where human input is required, executing tools when authorized.
+ * using UIMessageStreamWriter
+ */
+export async function processToolCalls<
+  Tools extends ToolSet,
+  ExecutableTools extends {
+    [Tool in keyof Tools as Tools[Tool] extends { execute: Function }
+      ? never
+      : Tool]: Tools[Tool];
+  },
+>(
+  {
+    writer,
+    messages,
+    tools: _tools,
+  }: {
+    tools: Tools; // used for type inference
+    writer: UIMessageStreamWriter;
+    messages: UIMessage[];
+  },
+  executeFunctions: {
+    [K in keyof ExecutableTools as ExecutableTools[K] extends {
+      inputSchema: z.ZodType;
+    }
+      ? K
+      : never]?: (args: InferToolArgs<ExecutableTools[K]>) => Promise<string>;
+  }
+): Promise<UIMessage[]> {
+  const lastMessage = messages[messages.length - 1];
+  const parts = lastMessage.parts;
+  if (!parts) return messages;
+
+  const processedParts = await Promise.all(
+    parts.map(async (part) => {
+      // Look for tool parts with output (confirmations) - v5 format
+      if (isToolConfirmationPart(part) && part.type.startsWith("tool-")) {
+        const toolName = part.type.replace("tool-", "");
+        const output = part.output;
+        // Only process if we have an execute function for this tool
+        if (!(toolName in executeFunctions)) {
+          return part;
         }
 
-        // Filter out tool-invocation parts (and any other tool-related parts)
-        const cleanedParts = message.parts.filter((part) => {
-            // Type assertion to handle the union type properly
-            const partType = part.type as string;
-            return !partType.startsWith("tool-");
-        });
+        let result: string = "";
 
-        // Return message with cleaned parts
-        return {
-            ...message,
-            parts: cleanedParts
-        };
-    }).filter((message) => {
-        // Keep user and system messages regardless
-        if (message.role === "user" || message.role === "system") {
-            return true;
-        }
+        if (output === APPROVAL.YES) {
+          const toolInstance =
+            executeFunctions[toolName as keyof typeof executeFunctions];
+          if (toolInstance) {
+            // Pass the input data - the tool's Zod schema will validate at runtime
+            const toolInput = part.input ?? {};
+            // We need to trust that the runtime data matches the expected type
+            // The Zod schema in the tool will validate this
+            result = await (
+              toolInstance as (args: typeof toolInput) => Promise<string>
+            )(toolInput);
 
-        // For assistant messages, only keep them if they have meaningful content
-        if (message.role === "assistant") {
-
-            // If message has non-empty parts with text content, keep it
-            if (message.parts && message.parts.length > 0) {
-                return message.parts.some(part => {
-                    const partType = part.type as string;
-                    return partType === "text" && "text" in part && part.text && String(part.text).trim();
+            // Stream the result directly using writer
+            const messageId = crypto.randomUUID();
+            const textStream = new ReadableStream({
+              start(controller) {
+                controller.enqueue({
+                  type: "text-start",
+                  id: messageId,
                 });
-            }
+                controller.enqueue({
+                  type: "text-delta",
+                  id: messageId,
+                  delta: result,
+                });
+                controller.enqueue({
+                  type: "text-end",
+                  id: messageId,
+                });
+                controller.close();
+              },
+            });
+            writer.merge(textStream);
+          } else {
+            result = "Error: No execute function found on tool";
+          }
+        } else if (output === APPROVAL.NO) {
+          result = "User denied access to tool execution";
+          // Stream the result directly using writer
+          const messageId = crypto.randomUUID();
+          const textStream = new ReadableStream({
+            start(controller) {
+              controller.enqueue({
+                type: "text-start",
+                id: messageId,
+              });
+              controller.enqueue({
+                type: "text-delta",
+                id: messageId,
+                delta: result,
+              });
 
-            // Remove empty assistant messages
-            return false;
+              controller.enqueue({
+                type: "text-end",
+                id: messageId,
+              });
+
+              controller.close();
+            },
+          });
+          writer.merge(textStream);
         }
+        return part; // Return the original part
+      }
+      return part; // Return unprocessed parts
+    })
+  );
 
-        // Keep other message types (tool, etc.)
-        return true;
-    });
+  return [
+    ...messages.slice(0, -1),
+    { ...lastMessage, parts: processedParts.filter(Boolean) },
+  ];
 }

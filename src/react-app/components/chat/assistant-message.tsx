@@ -2,51 +2,160 @@ import {
   Message,
   MessageAction,
   MessageActions,
-  MessageContent,
 } from "@/components/ui/message";
-import { cn } from "@/lib/utils";
-import { Check, Copy, Trash } from "lucide-react";
-import { type UIMessage as MessageType } from "ai";
+import { Check, Copy } from "lucide-react";
+import { getToolName, isToolUIPart } from "ai";
 import { Tool, ToolPart } from "../ui/tool";
+import {
+  Reasoning,
+  ReasoningContent,
+  ReasoningTrigger,
+} from "../ai-elements/reasoning";
+import { Button } from "../ui/button";
+import { Response } from "../ai-elements/response";
+import { APPROVAL, toolsRequiringConfirmation } from "@worker/lib/utils";
+import { Source, SourceContent, SourceTrigger } from "../prompt-kit/sources";
+import { useMemo } from "react";
+import { MODELS } from "@worker/lib/models";
+import { type ChatMessage } from "@/types/ai-types";
 type AssistantMessageProps = {
   children: string;
   copied: boolean;
   copyToClipboard: () => void;
-  parts: MessageType["parts"];
+  parts: ChatMessage["parts"];
+  id: string;
   addToolResult: ({
     toolCallId,
     result,
   }: {
     toolCallId: string;
-    result: any;
+    result: unknown;
   }) => void;
+  status: "streaming" | "ready" | "submitted" | "error";
+  isLastMessage: boolean;
+  metadata?: ChatMessage["metadata"];
 };
 export const AssistantMessage = ({
   children,
   copied,
   copyToClipboard,
   parts,
+  id,
+  status,
+  isLastMessage,
+  addToolResult,
+  metadata,
 }: AssistantMessageProps) => {
   const isContentEmpty = children !== null && children !== "";
+  const toolCallStatusList = parts?.filter(
+    (part) => part.type === "data-tool-call-status"
+  ) as {
+    type: "data-tool-call-status";
+    data: {
+      status: "loading" | "success" | "error" | undefined;
+      toolCallId: string;
+    };
+  }[];
+  const modelConfig = useMemo(() => {
+    if (metadata?.model) {
+      return MODELS.find((model) => model.id === metadata.model);
+    }
+    return;
+  }, [metadata?.model]);
+  const sources = parts?.filter((part) => part.type === "source-url") || [];
+
   return (
     <Message>
-      <div className="group flex flex-col w-full max-w-3xl flex-1 items-start gap-4 px-6 pb-2 mb-2 mx-auto">
-        <div className={cn("flex min-w-full flex-col gap-2")}>
-          {parts?.map((part) => {
+      <div className="group flex flex-col w-full max-w-3xl flex-1 items-start gap-4 px-0 md:px-6 pb-2 mb-2 mx-auto">
+        <div className="w-full flex flex-col gap-2">
+          {sources && sources.length > 0 && (
+            <div className="flex gap-2 mb-2 flex-wrap">
+              {sources.map((source) => {
+                return (
+                  <Source href={source.url} key={source.sourceId}>
+                    <SourceTrigger showFavicon label={source.title} />
+                    <SourceContent
+                      title={source.title || source.url}
+                      description={source.url}
+                    />
+                  </Source>
+                );
+              })}
+            </div>
+          )}
+          {parts?.map((part, idx) => {
             // In AI SDK v5, handle tool-call parts
-            if (part.type.startsWith("tool-")) {
-              return <Tool toolPart={part as ToolPart} />;
-            } else if (part.type === "text") {
+            if (part.type === "text") {
               return (
-                <MessageContent
-                  className={cn(
-                    "prose dark:prose-invert relative min-w-full bg-transparent p-0",
-                    "prose-h1:scroll-m-20 prose-h1:text-2xl prose-h1:font-semibold prose-h2:mt-8 prose-h2:scroll-m-20 prose-h2:text-xl prose-h2:mb-3 prose-h2:font-medium prose-h3:scroll-m-20 prose-h3:text-base prose-h3:font-medium prose-h4:scroll-m-20 prose-h5:scroll-m-20 prose-h6:scroll-m-20 prose-strong:font-medium prose-table:block prose-table:overflow-y-auto"
-                  )}
-                  markdown={true}
-                >
+                <Response isAnimating={status === "streaming"} key={idx}>
                   {part.text}
-                </MessageContent>
+                </Response>
+              );
+            } else if (isToolUIPart(part)) {
+              const toolCallStatus = toolCallStatusList?.find(
+                (status) => status.data.toolCallId === part.toolCallId
+              )?.data?.status;
+              const toolName = getToolName(part);
+              const toolCallId = part.toolCallId;
+              return (
+                <div key={toolCallId} title={toolName} className="space-y-2">
+                  <Tool
+                    toolPart={
+                      {
+                        ...part,
+                        state:
+                          toolCallStatus === "loading"
+                            ? "input-streaming"
+                            : toolCallStatus === "success"
+                              ? "output-available"
+                              : toolCallStatus === "error"
+                                ? "output-error"
+                                : part.state,
+                      } as ToolPart
+                    }
+                  />
+                  {toolsRequiringConfirmation.includes(toolName) &&
+                    part.state === "input-available" && (
+                      <div>
+                        <Button
+                          onClick={async () => {
+                            addToolResult({
+                              toolCallId,
+                              result: APPROVAL.YES,
+                            });
+                          }}
+                        >
+                          Yes
+                        </Button>
+                        <Button
+                          onClick={async () => {
+                            addToolResult({
+                              toolCallId,
+                              result: APPROVAL.NO,
+                            });
+                          }}
+                        >
+                          No
+                        </Button>
+                      </div>
+                    )}
+                </div>
+              );
+            } else if (part.type === "reasoning") {
+              return (
+                <Reasoning
+                  key={`${id}-${idx}`}
+                  isStreaming={
+                    status === "streaming" &&
+                    idx === parts.length - 1 &&
+                    isLastMessage
+                  }
+                >
+                  <ReasoningTrigger />
+                  <ReasoningContent className="text-muted-foreground">
+                    {part.text}
+                  </ReasoningContent>
+                </Reasoning>
               );
             }
             return;
@@ -72,16 +181,13 @@ export const AssistantMessage = ({
                 )}
               </button>
             </MessageAction>
-            <MessageAction tooltip="Delete" side="bottom" delayDuration={0}>
-              <button
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-transparent transition"
-                aria-label="Delete"
-                // onClick={handleDelete}
-                type="button"
-              >
-                <Trash className="size-4" />
-              </button>
-            </MessageAction>
+            {!!modelConfig && modelConfig.name && (
+              <MessageAction side="bottom" tooltip="Model">
+                <div className="text-xs text-muted-foreground">
+                  {modelConfig.name}
+                </div>
+              </MessageAction>
+            )}
           </MessageActions>
         ) : null}
       </div>

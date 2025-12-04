@@ -1,7 +1,49 @@
-import { createOpenRouter } from "@openrouter/ai-sdk-provider"
-import { ModelConfig } from "../types"
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { ModelConfig } from "../types";
 
 export const openrouterModels: ModelConfig[] = [
+  {
+    id: "openrouter:deepseek/deepseek-chat-v3.1:free",
+    name: "DeepSeek Chat v3.1 Free",
+    provider: "OpenRouter",
+    providerId: "openrouter",
+    modelFamily: "DeepSeek",
+    baseProviderId: "deepseek",
+    description:
+      "DeepSeek-V3.1 is a large hybrid reasoning model (671B parameters, 37B active) supporting both thinking and non-thinking modes via prompt templates. It features two-phase long-context training up to 128K tokens and uses FP8 microscaling for efficient inference. Suitable for tool use, code generation, reasoning, and agentic workflows with improved speed and performance.",
+    tags: [
+      "free",
+      "hybrid",
+      "reasoning",
+      "long-context",
+      "efficient",
+      "tool-use",
+      "code-generation",
+    ],
+    contextWindow: 128000,
+    inputCost: 0,
+    outputCost: 0,
+    priceUnit: "free",
+    vision: false,
+    tools: true,
+    audio: false,
+    reasoning: true,
+    webSearch: false,
+    openSource: false,
+    speed: "Medium",
+    intelligence: "High",
+    website: "https://openrouter.ai/deepseek/deepseek-chat-v3.1",
+    apiDocs: "https://openrouter.ai/deepseek/deepseek-chat-v3.1",
+    modelPage: "https://openrouter.ai/deepseek/deepseek-chat-v3.1",
+    releasedAt: "2025-08-23",
+    icon: "deepseek",
+    apiSdk: (apiKey?: string) =>
+      createOpenRouter({
+        apiKey: apiKey || process.env.OPENROUTER_API_KEY,
+      }).chat("deepseek/deepseek-chat-v3.1:free", {
+        reasoning: { enabled: true, max_tokens: 2000 },
+      }),
+  },
   {
     id: "openrouter:deepseek/deepseek-r1:free",
     name: "DeepSeek R1",
@@ -33,6 +75,72 @@ export const openrouterModels: ModelConfig[] = [
       createOpenRouter({
         apiKey: apiKey || process.env.OPENROUTER_API_KEY,
       }).chat("deepseek/deepseek-r1:free"),
+  },
+  {
+    id: "openrouter/sonoma-dusk-alpha",
+    name: "Sonoma Dusk Alpha",
+    provider: "OpenRouter",
+    providerId: "openrouter",
+    modelFamily: "OpenRouter",
+    baseProviderId: "stealth",
+    description:
+      "A fast and intelligent general-purpose frontier model with a 2 million token context window.",
+    tags: ["flagship", "reasoning", "performance", "reliability"],
+    contextWindow: 2000000,
+    inputCost: 0,
+    outputCost: 0,
+    priceUnit: "per 1M tokens",
+    vision: false,
+    tools: true,
+    audio: false,
+    reasoning: false,
+    webSearch: false,
+    openSource: false,
+    speed: "Fast",
+    intelligence: "High",
+    website: "https://openrouter.ai",
+    apiDocs: "https://openrouter.ai/openrouter/sonoma-dusk-alpha",
+    modelPage: "https://openrouter.ai/openrouter/sonoma-dusk-alpha",
+    releasedAt: "2025-09-05",
+    icon: "sonoma",
+    apiSdk: (apiKey?: string) =>
+      createOpenRouter({
+        apiKey: apiKey || process.env.OPENROUTER_API_KEY,
+      }).chat("openrouter/sonoma-dusk-alpha"),
+  },
+  {
+    id: "openrouter/sonoma-sky-alpha",
+    name: "Sonoma Sky Alpha",
+    provider: "OpenRouter",
+    providerId: "openrouter",
+    modelFamily: "OpenRouter",
+    baseProviderId: "stealth",
+    description:
+      "A fast and intelligent general-purpose frontier model with a 2 million token context window.",
+    tags: ["flagship", "reasoning", "performance", "reliability"],
+    contextWindow: 2000000,
+    inputCost: 0,
+    outputCost: 0,
+    priceUnit: "per 1M tokens",
+    vision: false,
+    tools: true,
+    audio: false,
+    reasoning: true,
+    webSearch: false,
+    openSource: false,
+    speed: "Fast",
+    intelligence: "High",
+    website: "https://openrouter.ai",
+    apiDocs: "https://openrouter.ai/openrouter/sonoma-sky-alpha",
+    modelPage: "https://openrouter.ai/openrouter/sonoma-sky-alpha",
+    releasedAt: "2025-09-05",
+    icon: "sonoma",
+    apiSdk: (apiKey?: string) =>
+      createOpenRouter({
+        apiKey: apiKey || process.env.OPENROUTER_API_KEY,
+      }).chat("openrouter/sonoma-sky-alpha", {
+        reasoning: { enabled: true, max_tokens: 2000 },
+      }),
   },
   {
     id: "openrouter:anthropic/claude-sonnet-4",
@@ -762,4 +870,4 @@ export const openrouterModels: ModelConfig[] = [
         }),
       }).chat("perplexity/sonar-deep-research"),
   },
-]
+];
