@@ -1,9 +1,9 @@
 {
-  "name": "agent-chat",
-  "description": "A chat agent",
+  "name": "eddy",
+  "description": "Eddy - AI Chat Agent",
   "version": "0.0.0",
   "cloudflare": {
-    "label": "Agent Chat",
+    "label": "Eddy - AI Chat Agent",
     "products": [
       "Workers"
     ],
@@ -104,23 +104,23 @@
     "wrangler": "^4.46.0"
   },
   "scripts": {
-    "build:prod": "tsc -b && CLOUDFLARE_ENV=prod vite build",
-    "build": "tsc -b && CLOUDFLARE_ENV=dev vite build",
+    "build:prod": "tsc -b && CLOUDFLARE_ENV=production vite build",
+    "build": "tsc -b && CLOUDFLARE_ENV=development vite build",
     "cf-check-size": "tsc && vite build && wrangler deploy --dry-run",
     "deploy:prod": "npm run build:prod && wrangler deploy",
     "deploy": "npm run build && wrangler deploy",
-    "dev": "CLOUDFLARE_ENV=dev vite",
+    "dev": "CLOUDFLARE_ENV=development vite",
     "lint": "eslint .",
     "preview": "npm run build && vite preview",
     "ui": "bunx --bun shadcn",
-    "cf-typegen": "wrangler types -e dev",
-    "cf-typegen:prod": "wrangler types -e prod",
+    "cf-typegen": "wrangler types -e development",
+    "cf-typegen:prod": "wrangler types -e production",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
-    "db:studio": "CLOUDFLARE_ENV=dev drizzle-kit studio",
-    "db:migrate-local": "wrangler d1 migrations apply eddy-ai-chat-db-dev -e dev",
-    "db:migrate:dev": "CLOUDFLARE_ENV=dev drizzle-kit migrate",
-    "db:migrate:prod": "CLOUDFLARE_ENV=prod drizzle-kit migrate"
+    "db:studio": "CLOUDFLARE_ENV=development drizzle-kit studio",
+    "db:migrate-local": "wrangler d1 migrations apply eddy-ai-chat-db-dev -e development",
+    "db:migrate:dev": "CLOUDFLARE_ENV=development drizzle-kit migrate",
+    "db:migrate:prod": "CLOUDFLARE_ENV=production drizzle-kit migrate"
   },
   "type": "module"
 }
