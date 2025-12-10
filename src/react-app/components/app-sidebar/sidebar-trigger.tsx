@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Button } from "../ui/button";
-import { Palette, Key } from "lucide-react";
+import { Key } from "lucide-react";
 import { SettingsDialog } from "@/components/settings";
 import { SettingsSection } from "@/components/settings/types";
 import { SidebarTrigger } from "../ui/sidebar";
+import { ThemeSwitcher } from "../kibo-ui/theme-switcher";
 
 export const AppSidebarTrigger = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -21,18 +22,7 @@ export const AppSidebarTrigger = () => {
         <div className="flex items-center justify-between gap-2 px-2 w-full">
           <SidebarTrigger />
           <div className="flex items-center gap-1 ml-auto">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8"
-              onClick={() => handleOpenSettings("appearance")}
-              title="Appearance Settings"
-              aria-label="Open appearance settings"
-              tabIndex={0}
-            >
-              <Palette className="size-4" />
-              <span className="sr-only">Appearance Settings</span>
-            </Button>
+            <ThemeSwitcher />
             <Button
               variant="ghost"
               size="icon"

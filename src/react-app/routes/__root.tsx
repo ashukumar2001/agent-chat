@@ -1,9 +1,9 @@
 import { AppSidebar } from "@/components/app-sidebar";
 import { AppSidebarTrigger } from "@/components/app-sidebar/sidebar-trigger";
+import { ThemeProvider } from "@/components/theme-provider";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { Outlet, createRootRoute } from "@tanstack/react-router";
-import { ThemeProvider } from "next-themes";
 
 export const Route = createRootRoute({
   component: RootComponent,
@@ -11,12 +11,7 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   return (
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="system"
-      enableSystem
-      disableTransitionOnChange
-    >
+    <ThemeProvider defaultTheme="system" storageKey="eddy-ui-theme">
       <Toaster />
       <SidebarProvider>
         <AppSidebar />

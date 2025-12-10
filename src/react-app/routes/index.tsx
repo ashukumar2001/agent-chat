@@ -46,7 +46,9 @@ function RouteComponent() {
           },
         },
       });
-    } catch (error) {}
+    } catch (error) {
+      console.warn(error);
+    }
   };
   return (
     <div className="@container/main relative flex h-full flex-col items-center justify-end md:justify-center">

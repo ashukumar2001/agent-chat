@@ -36,13 +36,16 @@ export function AppSidebar() {
   const { chatId } = useChatSession();
   const [settingsOpen, setSettingsOpen] = useState(false);
   return (
-    <Sidebar collapsible="offcanvas" className="bg-gradient-to-b from-sidebar to-sidebar/90 border-r-0">
+    <Sidebar
+      collapsible="offcanvas"
+      className="bg-linear-to-b from-sidebar to-sidebar/90 border-r-0"
+    >
       <SidebarHeader className="flex-col flex p-4">
-        <h1 className="text-2xl font-bold group-data-[state=collapsed]:opacity-0 h-8 flex items-center transition-all group-data-[state=expanded]:opacity-100 group-data-[state=expanded]:delay-150 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+        <h1 className="text-2xl font-bold group-data-[state=collapsed]:opacity-0 h-8 flex items-center transition-all group-data-[state=expanded]:opacity-100 group-data-[state=expanded]:delay-150 bg-linear-to-r from-primary to-primary/60 bg-clip-text text-transparent">
           Eddy
         </h1>
         <Button
-          className="w-full justify-start bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-primary-foreground shadow-sm transition-all duration-300"
+          className="w-full justify-start bg-linear-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-primary-foreground shadow-sm transition-all duration-300"
           onClick={() => {
             navigate({ to: "/" });
           }}
@@ -59,7 +62,9 @@ export function AppSidebar() {
           };
 
           chats?.forEach((chat) => {
-            const chatDate = new Date(chat.updatedAt || chat.createdAt || Date.now());
+            const chatDate = new Date(
+              chat.updatedAt || chat.createdAt || Date.now()
+            );
             const today = new Date();
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
@@ -95,7 +100,8 @@ export function AppSidebar() {
                             asChild
                           >
                             <Link
-                              to={"/chat/" + chat.id}
+                              to="/chat/$chatId"
+                              params={{ chatId: chat.id }}
                               className="flex-1 text-left"
                             >
                               <span className="truncate">{chat.name}</span>
@@ -111,7 +117,10 @@ export function AppSidebar() {
                                 <span className="sr-only">More</span>
                               </SidebarMenuAction>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-fit" align="start">
+                            <DropdownMenuContent
+                              className="w-fit"
+                              align="start"
+                            >
                               <DropdownMenuItem
                                 onSelect={(e) => e.preventDefault()}
                               >
@@ -150,8 +159,8 @@ export function AppSidebar() {
           );
         })()}
       </SidebarContent>
-      <SidebarFooter className="border-t border-sidebar-border/50 p-4 bg-gradient-to-t from-sidebar-accent/10 to-transparent">
-        {!!userSessionData?.user ? (
+      <SidebarFooter className="border-t border-sidebar-border/50 p-4 bg-linear-to-t from-sidebar-accent/10 to-transparent">
+        {userSessionData?.user ? (
           <>
             <Button
               variant="ghost"

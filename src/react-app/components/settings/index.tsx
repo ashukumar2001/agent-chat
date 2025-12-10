@@ -7,7 +7,6 @@ import {
 import { cn } from "@/lib/utils";
 import { SettingsSection } from "./types";
 import { SETTINGS_SECTIONS } from "./constants";
-import { AppearanceSettings } from "./appearance-settings";
 import { ApiKeysSettings } from "./api-keys-settings";
 import { ModelsSettings } from "./models-settings";
 import { ConnectionsSettings } from "./connections-settings";
@@ -39,8 +38,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     switch (activeSection) {
       case "general":
         return <ProfilePage />;
-      case "appearance":
-        return <AppearanceSettings />;
       case "api-keys":
         return <ApiKeysSettings />;
       case "models":
