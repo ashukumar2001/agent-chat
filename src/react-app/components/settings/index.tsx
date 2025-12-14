@@ -15,8 +15,6 @@ import { cn } from "@/lib/utils";
 import { SettingsSection } from "./types";
 import { SETTINGS_SECTIONS } from "./constants";
 import { ApiKeysSettings } from "./api-keys-settings";
-import { ModelsSettings } from "./models-settings";
-import { ConnectionsSettings } from "./connections-settings";
 import { ProfilePage } from "../profile";
 import { useModal, type SettingsSectionType } from "@/hooks/use-modal";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -59,10 +57,6 @@ export function SettingsModal() {
         return <ProfilePage />;
       case "api-keys":
         return <ApiKeysSettings />;
-      case "models":
-        return <ModelsSettings />;
-      case "connections":
-        return <ConnectionsSettings />;
       default:
         return <ProfilePage />;
     }

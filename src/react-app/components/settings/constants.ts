@@ -78,14 +78,4 @@ export const SETTINGS_SECTIONS: SettingsSectionItem[] = [
     label: "API Keys",
     icon: Key,
   },
-  // {
-  //     id: "models",
-  //     label: "Models",
-  //     icon: Cpu,
-  // },
-  // {
-  //     id: "connections",
-  //     label: "Connections",
-  //     icon: Zap,
-  // },
 ];

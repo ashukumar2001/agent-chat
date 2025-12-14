@@ -5,12 +5,7 @@ export const MODAL_TYPES = ["login", "settings", "confirm"] as const;
 export type ModalType = (typeof MODAL_TYPES)[number];
 
 // Settings section types
-export const SETTINGS_SECTION_TYPES = [
-  "general",
-  "api-keys",
-  "models",
-  "connections",
-] as const;
+export const SETTINGS_SECTION_TYPES = ["general", "api-keys"] as const;
 export type SettingsSectionType = (typeof SETTINGS_SECTION_TYPES)[number];
 
 /**
