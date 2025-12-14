@@ -12,6 +12,7 @@ import {
   SidebarMenuSkeleton,
 } from "@/components/ui/sidebar";
 import { useChats } from "@/hooks/use-chats";
+import { useModal } from "@/hooks/use-modal";
 import { authClient } from "@/lib/auth-client";
 import { LogInIcon, MoreHorizontal, PencilIcon, TrashIcon } from "lucide-react";
 import { Button } from "../ui/button";
@@ -24,8 +25,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SettingsDialog } from "@/components/settings";
-import { useState } from "react";
 
 export function AppSidebar() {
   const navigate = useNavigate();
@@ -34,7 +33,7 @@ export function AppSidebar() {
     userSessionData?.user?.id
   );
   const { chatId } = useChatSession();
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const { openModal } = useModal();
   return (
     <Sidebar
       collapsible="offcanvas"
@@ -165,7 +164,7 @@ export function AppSidebar() {
             <Button
               variant="ghost"
               className="justify-start px-2 h-14 w-full hover:bg-sidebar-accent/50 transition-colors"
-              onClick={() => setSettingsOpen(true)}
+              onClick={() => openModal("settings")}
             >
               <Avatar className="h-9 w-9 border border-sidebar-border">
                 <AvatarImage src={userSessionData?.user?.image!} />
@@ -190,16 +189,13 @@ export function AppSidebar() {
           <Button
             variant="ghost"
             className="justify-center w-full bg-sidebar-accent/10 hover:bg-sidebar-accent/20"
-            onClick={() => {
-              authClient.signIn.social({ provider: "github" });
-            }}
+            onClick={() => openModal("login")}
           >
             <LogInIcon className="mr-2 h-4 w-4" />
             <span>Login</span>
           </Button>
         )}
       </SidebarFooter>
-      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </Sidebar>
   );
 }

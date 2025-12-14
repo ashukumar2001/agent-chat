@@ -14,10 +14,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CalendarDays, Mail, Shield, User, LogOut } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useNavigate } from "@tanstack/react-router";
+import { useModal } from "@/hooks/use-modal";
 
 export const ProfilePage = () => {
   const { user, session, isPending } = useSession();
   const navigate = useNavigate();
+  const { openModal, closeModal } = useModal();
   const handleSignOut = async () => {
     await authClient.signOut();
     navigate({ to: "/" });
@@ -76,7 +78,10 @@ export const ProfilePage = () => {
               You need to be signed in to view your profile.
             </p>
             <Button
-              onClick={() => authClient.signIn.social({ provider: "github" })}
+              onClick={() => {
+                closeModal();
+                openModal("login");
+              }}
             >
               Sign In
             </Button>
@@ -88,25 +93,27 @@ export const ProfilePage = () => {
 
   return (
     <div className="container mx-auto max-w-4xl">
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Profile</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Profile</h1>
         </div>
 
         {/* Main Profile Card */}
         <Card>
-          <CardHeader className="pb-4 space-y-3">
-            <div className="flex items-center space-x-4">
-              <Avatar className="h-20 w-20">
+          <CardHeader className="pb-4 space-y-3 px-4 sm:px-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <Avatar className="h-16 w-16 sm:h-20 sm:w-20">
                 <AvatarImage src={user.image || undefined} alt={user.name} />
-                <AvatarFallback className="text-lg">
+                <AvatarFallback className="text-base sm:text-lg">
                   {getUserInitials(user.name)}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <CardTitle className="text-2xl">{user.name}</CardTitle>
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <CardTitle className="text-xl sm:text-2xl">
+                    {user.name}
+                  </CardTitle>
                   {user.isAnonymous && (
                     <Badge variant="secondary">Anonymous</Badge>
                   )}
@@ -120,30 +127,36 @@ export const ProfilePage = () => {
                     </Badge>
                   )}
                 </div>
-                <CardDescription className="text-base">
+                <CardDescription className="text-sm sm:text-base">
                   Member since {formatDate(user.createdAt)}
                 </CardDescription>
               </div>
             </div>
-            <Button variant="outline" onClick={handleSignOut}>
+            <Button
+              variant="outline"
+              onClick={handleSignOut}
+              className="w-full sm:w-auto"
+            >
               <LogOut className="h-4 w-4 mr-2" />
               Sign Out
             </Button>
           </CardHeader>
 
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-4 sm:space-y-6 px-4 sm:px-6">
             <Separator />
 
             {/* User Information */}
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Account Information</h3>
+            <div className="grid gap-4 sm:gap-6">
+              <div className="space-y-3 sm:space-y-4">
+                <h3 className="text-base sm:text-lg font-semibold">
+                  Account Information
+                </h3>
 
                 <div className="flex items-center space-x-3">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <div>
+                  <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <div className="min-w-0">
                     <p className="text-sm font-medium">Email</p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground truncate">
                       {user.email}
                     </p>
                   </div>
@@ -160,24 +173,26 @@ export const ProfilePage = () => {
                 </div> */}
               </div>
 
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Account Status</h3>
+              <div className="space-y-3 sm:space-y-4">
+                <h3 className="text-base sm:text-lg font-semibold">
+                  Account Status
+                </h3>
 
                 <div className="flex items-center space-x-3">
-                  <CalendarDays className="h-4 w-4 text-muted-foreground" />
-                  <div>
+                  <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <div className="min-w-0">
                     <p className="text-sm font-medium">Account Created</p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground truncate">
                       {formatDate(user.createdAt)}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center space-x-3">
-                  <CalendarDays className="h-4 w-4 text-muted-foreground" />
-                  <div>
+                  <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <div className="min-w-0">
                     <p className="text-sm font-medium">Last Updated</p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground truncate">
                       {formatDate(user.updatedAt)}
                     </p>
                   </div>
@@ -189,15 +204,15 @@ export const ProfilePage = () => {
             {session && (
               <>
                 <Separator />
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Current Session</h3>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div>
-                      <p className="text-sm font-medium">Session Expires</p>
-                      <p className="text-sm text-muted-foreground">
-                        {formatDate(session.expiresAt)}
-                      </p>
-                    </div>
+                <div className="space-y-3 sm:space-y-4">
+                  <h3 className="text-base sm:text-lg font-semibold">
+                    Current Session
+                  </h3>
+                  <div>
+                    <p className="text-sm font-medium">Session Expires</p>
+                    <p className="text-sm text-muted-foreground">
+                      {formatDate(session.expiresAt)}
+                    </p>
                   </div>
                 </div>
               </>
@@ -205,8 +220,10 @@ export const ProfilePage = () => {
 
             {/* Account Type Info */}
             <Separator />
-            <div className="bg-muted/50 rounded-lg p-4">
-              <h3 className="text-lg font-semibold mb-2">Account Type</h3>
+            <div className="bg-muted/50 rounded-lg p-3 sm:p-4">
+              <h3 className="text-base sm:text-lg font-semibold mb-2">
+                Account Type
+              </h3>
               {user.isAnonymous ? (
                 <p className="text-sm text-muted-foreground">
                   This is an anonymous account. Consider signing up with a

@@ -60,6 +60,7 @@
     "lucide-react": "^0.556.0",
     "marked": "^15.0.11",
     "motion": "^12.23.25",
+    "nuqs": "^2.8.5",
     "ollama-ai-provider": "^1.2.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
@@ -73,6 +74,7 @@
     "tailwindcss": "^4.1.17",
     "tailwindcss-animate": "^1.0.7",
     "use-stick-to-bottom": "^1.1.1",
+    "vaul": "^1.1.2",
     "zod": "^4.0.17"
   },
   "devDependencies": {
