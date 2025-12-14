@@ -83,7 +83,7 @@ export const ApiKeysSettings: React.FC = () => {
 
   const selectedProviderData = PROVIDERS.find((p) => p.id === selectedProvider);
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-4">
       <div>
         <h3 className="text-lg font-semibold">API Keys</h3>
         <p className="text-sm text-muted-foreground">

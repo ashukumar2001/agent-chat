@@ -115,7 +115,7 @@ export function SettingsModal() {
         </button>
         <h2 className="text-lg font-semibold">{activeSectionData?.label}</h2>
       </div>
-      <div className="flex-1 p-4 overflow-y-auto">{renderContent()}</div>
+      <div className="flex-1 p-4 pb-8 overflow-y-auto">{renderContent()}</div>
     </div>
   );
 
