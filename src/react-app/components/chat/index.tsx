@@ -4,13 +4,13 @@ import { ChatInput } from "../chat-input";
 import { useEffect, useMemo, useState } from "react";
 import { clientTools } from "@worker/lib/tools";
 import { DEFUALT_MODEL } from "@worker/lib/config";
-import { useChats } from "@/hooks/use-chats";
 import { toast } from "sonner";
 import { toolsRequiringConfirmation } from "@worker/lib/utils";
 import { AITool, useAgentChat } from "agents/ai-react";
 import { ChatRequestOptions, isToolUIPart, ToolUIPart } from "ai";
 import { ChatMessage } from "@/types/ai-types";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
+import { useChatUtils } from "@/hooks/use-chat-utils";
 
 export const Chat = ({
   chatId,
@@ -30,11 +30,12 @@ export const Chat = ({
     },
   });
   const { createNewChatMutation, getChatById, updateChatMutation } =
-    useChats(userId);
+    useChatUtils();
   const currentChat = useMemo(
     () => (chatId ? getChatById(chatId) : null),
     [chatId, getChatById]
   );
+
   const agent = useAgent({
     agent: "chat-agent",
     name: `${userId}:${chatId}`,

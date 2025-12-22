@@ -27,6 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Chat } from "@/types/misc";
+import { useChatUtils } from "@/hooks/use-chat-utils";
 
 // Types
 type GroupedChats = {
@@ -317,7 +318,8 @@ const SidebarFooterContent = memo(function SidebarFooterContent({
 export function AppSidebar() {
   const { data: userSessionData } = authClient.useSession();
   const userId = userSessionData?.user?.id;
-  const { chats, deleteChatMutation, isLoading } = useChats(userId);
+  const { chats, isLoading } = useChats(userId);
+  const { deleteChatMutation } = useChatUtils();
   const { chatId } = useChatSession();
 
   const groupedChats = useMemo(() => groupChatsByDate(chats), [chats]);
