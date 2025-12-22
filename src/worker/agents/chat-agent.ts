@@ -3,10 +3,11 @@ import {
   convertToModelMessages,
   createUIMessageStream,
   createUIMessageStreamResponse,
-  type StreamTextOnFinishCallback,
   streamText,
   stepCountIs,
   LanguageModel,
+  StreamTextOnFinishCallback,
+  ToolSet,
 } from "ai";
 import { tools } from "../lib/tools";
 import {
@@ -25,7 +26,7 @@ import { getUserKey } from "../lib/user-keys";
 
 export class ChatAgent extends AIChatAgent<Env> {
   async onChatMessage(
-    onFinish: StreamTextOnFinishCallback<{}>,
+    onFinish: StreamTextOnFinishCallback<ToolSet>,
     {
       config,
       abortSignal,
@@ -64,7 +65,7 @@ export class ChatAgent extends AIChatAgent<Env> {
     if (modelConfig.apiSdk) {
       modelInstance = modelConfig.apiSdk(apiKey);
     } else {
-      if (!!this.env.GEMINI_API_KEY) {
+      if (this.env.GEMINI_API_KEY) {
         // Fallback to Google SDK if no API key is configured
         const google = createGoogleGenerativeAI({
           apiKey: this.env.GEMINI_API_KEY,
@@ -81,7 +82,8 @@ export class ChatAgent extends AIChatAgent<Env> {
       system: DEFAULT_SYSTEM_PROMPT,
       messages: convertToModelMessages(this.messages),
       model: modelInstance,
-      onFinish,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      onFinish: onFinish as any,
       tools: modelConfig.tools
         ? {
             ...(modelConfig.webSearch && webSearchEnabled
@@ -95,10 +97,12 @@ export class ChatAgent extends AIChatAgent<Env> {
       abortSignal,
       providerOptions: {
         google: {
-          thinkingConfig: {
-            includeThoughts: true,
-            thinkingBudget: modelConfig.reasoning ? 1024 : 0,
-          },
+          ...(modelConfig.reasoning && {
+            thinkingConfig: {
+              includeThoughts: true,
+              thinkingBudget: modelConfig.reasoning ? 1024 : 0,
+            },
+          }),
         } as GoogleGenerativeAIProviderOptions,
       },
     });
