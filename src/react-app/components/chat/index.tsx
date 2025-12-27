@@ -57,7 +57,6 @@ export const Chat = ({
     },
     experimental_automaticToolResolution: true,
     toolsRequiringConfirmation,
-    tools: clientTools satisfies Record<string, AITool>,
   });
   // Wrapper to match ChatBox's expected signature
   const addToolResult = async ({
@@ -83,8 +82,7 @@ export const Chat = ({
         chatId
       );
       if (!_chatId) return;
-      await originalAddToolResult({
-        tool: toolName,
+      originalAddToolResult({
         toolCallId,
         output: result,
       });
@@ -157,10 +155,10 @@ export const Chat = ({
     regenerate({
       messageId,
       body: {
-        config: {
+        metadata: {
+          model: selectedModel,
           userId,
           chatId: _chatId,
-          model: selectedModel,
           webSearch: isWebSearchEnabled,
         },
       },
@@ -188,11 +186,11 @@ export const Chat = ({
         },
         {
           body: {
-            config: {
+            metadata: {
+              model: chatConfig?.modelId || selectedModel,
               userId,
               chatId: _chatId,
-              model: chatConfig?.modelId || selectedModel,
-              webSearch: chatConfig?.webSearchEnabled || isWebSearchEnabled,
+              webSearch: chatConfig?.webSearchEnabled ?? isWebSearchEnabled,
             },
           },
         }

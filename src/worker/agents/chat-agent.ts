@@ -1,4 +1,3 @@
-import { AIChatAgent } from "./ai-chat-agent";
 import {
   convertToModelMessages,
   createUIMessageStream,
@@ -23,24 +22,18 @@ import {
   GoogleGenerativeAIProviderOptions,
 } from "@ai-sdk/google";
 import { getUserKey } from "../lib/user-keys";
+import { AIChatAgent, type OnChatMessageOptions } from "./ai-chat-agent";
 
 export class ChatAgent extends AIChatAgent<Env> {
   async onChatMessage(
     onFinish: StreamTextOnFinishCallback<ToolSet>,
-    {
-      config,
-      abortSignal,
-    }: {
-      abortSignal: AbortSignal | undefined;
-      config?: Record<string, unknown>;
-    }
+    { abortSignal, metadata }: OnChatMessageOptions
   ) {
-    const userId = config?.userId as string;
-    const modelId = (config?.model as string) || DEFUALT_MODEL;
-    const webSearchEnabled = Boolean(config?.webSearch);
-    const startTime = Date.now();
     const lastMessage = this.messages[this.messages.length - 1];
-
+    const userId = (metadata?.userId as string) || "";
+    const modelId = (metadata?.model as string) ?? DEFUALT_MODEL;
+    const webSearchEnabled = Boolean(metadata?.webSearch);
+    const startTime = Date.now();
     if (hasToolConfirmation(lastMessage)) {
       // Process tool confirmations using UI stream
       const stream = createUIMessageStream({
@@ -54,6 +47,7 @@ export class ChatAgent extends AIChatAgent<Env> {
       });
       return createUIMessageStreamResponse({ stream });
     }
+
     const modelConfig = MODELS.find((model) => model.id === modelId);
 
     if (!modelConfig) {
@@ -62,7 +56,7 @@ export class ChatAgent extends AIChatAgent<Env> {
     let modelInstance: LanguageModel | null = null;
     const apiKey = await getUserKey(userId, modelConfig.providerId, this.env);
     // Use the dynamic model configuration instead of hardcoded model
-    if (modelConfig.apiSdk) {
+    if (modelConfig.apiSdk && apiKey) {
       modelInstance = modelConfig.apiSdk(apiKey);
     } else {
       if (this.env.GEMINI_API_KEY) {
@@ -70,7 +64,7 @@ export class ChatAgent extends AIChatAgent<Env> {
         const google = createGoogleGenerativeAI({
           apiKey: this.env.GEMINI_API_KEY,
         });
-        modelInstance = google(modelConfig.id);
+        modelInstance = google("gemini-2.5-flash");
       } else {
         throw new Error(
           `No API key configured for provider ${modelConfig.provider}`
@@ -80,8 +74,8 @@ export class ChatAgent extends AIChatAgent<Env> {
     // Use streamText directly and return with metadata
     const result = streamText({
       system: DEFAULT_SYSTEM_PROMPT,
-      messages: convertToModelMessages(this.messages),
-      model: modelInstance,
+      messages: await convertToModelMessages(this.messages),
+      model: modelInstance!,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       onFinish: onFinish as any,
       tools: modelConfig.tools

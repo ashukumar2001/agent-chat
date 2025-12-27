@@ -56,10 +56,10 @@ export const Message = ({
       status={status}
       isLastMessage={isLastMessage}
       metadata={metadata}
+      regenerate={regenerate}
     />
   ) : (
     <UserMessage
-      regenerate={regenerate}
       children={children}
       id={id}
       copied={copied}

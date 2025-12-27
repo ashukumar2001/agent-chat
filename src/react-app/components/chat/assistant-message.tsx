@@ -3,8 +3,8 @@ import {
   MessageAction,
   MessageActions,
 } from "@/components/ui/message";
-import { Check, Copy } from "lucide-react";
-import { getToolName, isToolUIPart } from "ai";
+import { Check, Copy, RefreshCcw } from "lucide-react";
+import { ChatRequestOptions, getToolName, isToolUIPart } from "ai";
 import { Tool, ToolPart } from "../ui/tool";
 import {
   Reasoning,
@@ -33,6 +33,11 @@ type AssistantMessageProps = {
   }) => void;
   status: "streaming" | "ready" | "submitted" | "error";
   isLastMessage: boolean;
+  regenerate: (
+    props: {
+      messageId?: string;
+    } & ChatRequestOptions
+  ) => Promise<void>;
   metadata?: ChatMessage["metadata"];
 };
 export const AssistantMessage = ({
@@ -45,6 +50,7 @@ export const AssistantMessage = ({
   isLastMessage,
   addToolResult,
   metadata,
+  regenerate,
 }: AssistantMessageProps) => {
   const isContentEmpty = children !== null && children !== "";
   const toolCallStatusList = parts?.filter(
@@ -179,6 +185,16 @@ export const AssistantMessage = ({
                 ) : (
                   <Copy className="size-4" />
                 )}
+              </button>
+            </MessageAction>
+            <MessageAction tooltip="Retry" side="bottom" delayDuration={0}>
+              <button
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-transparent transition"
+                aria-label="Retry"
+                type="button"
+                onClick={() => regenerate({ messageId: id })}
+              >
+                <RefreshCcw className="size-4" />
               </button>
             </MessageAction>
             {!!modelConfig && modelConfig.name && (
