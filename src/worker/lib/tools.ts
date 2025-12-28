@@ -1,58 +1,40 @@
 import { tool } from "ai";
 import { z } from "zod";
-import type { AITool } from "agents/ai-react";
+// import type { AITool } from "agents/ai-react";
 
-// Server-side tool that requires confirmation
+// Server-side tool requiring approval (dynamic based on input)
 const getWeatherInformationTool = tool({
   description:
     "Get the current weather information for a specific city. Always use this tool when the user asks about weather.",
   inputSchema: z.object({
     city: z.string().describe("The name of the city to get weather for"),
   }),
-  // no execute function, we want human in the loop
-});
-
-// Client-side tool that requires confirmation
-const getLocalTimeTool = tool({
-  description: "get the local time for a specified location",
-  inputSchema: z.object({ location: z.string() }),
-  execute: async ({ location }) => {
-    console.log(`Getting local time for ${location}`);
+  needsApproval: true,
+  execute: async ({ city }) => {
+    // sleep 2s
     await new Promise((res) => setTimeout(res, 2000));
-    return "10am";
+    return "The current weather in " + city + " is Sunny, 25°C.";
   },
 });
 
-// Server-side tool that does NOT require confirmation
-const getLocalNewsTool = tool({
-  description: "get local news for a specified location",
-  inputSchema: z.object({ location: z.string() }),
-  execute: async ({ location }) => {
-    console.log(`Getting local news for ${location}`);
-    await new Promise((res) => setTimeout(res, 2000));
-    return `${location} kittens found drinking tea this last weekend`;
-  },
+// Client-executed tool (no execute = client handles via onToolCall)
+const getLocation = tool({
+  description: "Get user location from browser",
+  inputSchema: z.object({}),
+  // No execute function
 });
+// // Client-executed tool (no execute = client handles via onToolCall)
+// const greetUser = tool({
+//   description: "Greet the user",
+//   inputSchema: z.object({}),
+//   execute: async () => {
+//     return "Hello, user! How can I assist you today?";
+//   },
+// });
 
 // Export AI SDK tools for server-side use
 export const tools = {
-  getLocalTime: {
-    description: getLocalTimeTool.description,
-    inputSchema: getLocalTimeTool.inputSchema,
-  },
-  getWeatherInformation: getWeatherInformationTool,
-  // getLocalNews: getLocalNewsTool,
-};
-
-// Export AITool format for client-side use
-export const clientTools: Record<string, AITool> = {
-  getLocalTime: getLocalTimeTool as AITool,
-  getWeatherInformation: {
-    description: getWeatherInformationTool.description,
-    inputSchema: getWeatherInformationTool.inputSchema,
-  },
-  getLocalNews: {
-    description: getLocalNewsTool.description,
-    inputSchema: getLocalNewsTool.inputSchema,
-  },
+  getWeatherInformationTool,
+  getLocation,
+  // greetUser,
 };

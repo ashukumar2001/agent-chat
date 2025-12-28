@@ -1,7 +1,5 @@
 import {
   convertToModelMessages,
-  createUIMessageStream,
-  createUIMessageStreamResponse,
   streamText,
   stepCountIs,
   LanguageModel,
@@ -9,18 +7,9 @@ import {
   ToolSet,
 } from "ai";
 import { tools } from "../lib/tools";
-import {
-  processToolCalls,
-  hasToolConfirmation,
-  executions,
-} from "../lib/utils";
 import { DEFAULT_SYSTEM_PROMPT, DEFUALT_MODEL } from "../lib/config";
 import { MODELS } from "../lib/models";
-import {
-  createGoogleGenerativeAI,
-  google,
-  GoogleGenerativeAIProviderOptions,
-} from "@ai-sdk/google";
+import { createGoogleGenerativeAI, google } from "@ai-sdk/google";
 import { getUserKey } from "../lib/user-keys";
 import { AIChatAgent, type OnChatMessageOptions } from "./ai-chat-agent";
 
@@ -29,24 +18,10 @@ export class ChatAgent extends AIChatAgent<Env> {
     onFinish: StreamTextOnFinishCallback<ToolSet>,
     { abortSignal, metadata }: OnChatMessageOptions
   ) {
-    const lastMessage = this.messages[this.messages.length - 1];
     const userId = (metadata?.userId as string) || "";
     const modelId = (metadata?.model as string) ?? DEFUALT_MODEL;
     const webSearchEnabled = Boolean(metadata?.webSearch);
     const startTime = Date.now();
-    if (hasToolConfirmation(lastMessage)) {
-      // Process tool confirmations using UI stream
-      const stream = createUIMessageStream({
-        execute: async ({ writer }) => {
-          await processToolCalls(
-            { writer, messages: this.messages, tools },
-            executions
-          );
-        },
-        originalMessages: this.messages,
-      });
-      return createUIMessageStreamResponse({ stream });
-    }
 
     const modelConfig = MODELS.find((model) => model.id === modelId);
 
@@ -89,16 +64,16 @@ export class ChatAgent extends AIChatAgent<Env> {
         : undefined,
       stopWhen: stepCountIs(5),
       abortSignal,
-      providerOptions: {
-        google: {
-          ...(modelConfig.reasoning && {
-            thinkingConfig: {
-              includeThoughts: true,
-              thinkingBudget: modelConfig.reasoning ? 1024 : 0,
-            },
-          }),
-        } as GoogleGenerativeAIProviderOptions,
-      },
+      // providerOptions: {
+      //   google: {
+      //     ...(modelConfig.reasoning && {
+      //       thinkingConfig: {
+      //         includeThoughts: true,
+      //         thinkingBudget: modelConfig.reasoning ? 1024 : 0,
+      //       },
+      //     }),
+      //   } as GoogleGenerativeAIProviderOptions,
+      // },
     });
     return result.toUIMessageStreamResponse({
       sendSources: true,
@@ -120,7 +95,6 @@ export class ChatAgent extends AIChatAgent<Env> {
           return {
             responseTime: Date.now() - startTime,
             totalTokens: part.totalUsage?.totalTokens,
-            cachedInputTokens: part.totalUsage.cachedInputTokens,
           };
         }
       },

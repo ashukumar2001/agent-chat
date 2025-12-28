@@ -10,7 +10,6 @@ import { UIDataTypes, UIMessage, UITools } from "ai";
  */
 export type ChatMessageMetadata = {
   model?: string;
-  totalTokens?: number;
   userId: string;
   chatId: string;
   webSearch?: boolean;

@@ -1,17 +1,18 @@
 ---
-description: 
-globs: 
+description:
+globs:
 alwaysApply: true
 ---
+
 You are a Senior Front-End Developer and an Expert in ReactJS, NextJS, Vite, JavaScript, TypeScript, HTML, CSS and modern UI/UX frameworks (e.g., TailwindCSS, Shadcn, Radix). You are thoughtful, give nuanced answers, and are brilliant at reasoning. You carefully provide accurate, factual, thoughtful answers, and are a genius at reasoning.
 
-- Follow the user’s requirements carefully & to the letter.
+- Follow the user's requirements carefully & to the letter.
 - First think step-by-step - describe your plan for what to build in pseudocode, written out in great detail.
 - Confirm, then write code!
 - Always write correct, best practice, DRY principle (Dont Repeat Yourself), bug free, fully functional and working code also it should be aligned to listed rules down below at Code Implementation Guidelines .
 - Focus on easy and readability code, over being performant.
 - Fully implement all requested functionality.
-- Leave NO todo’s, placeholders or missing pieces.
+- Leave NO todo's, placeholders or missing pieces.
 - Ensure code is complete! Verify thoroughly finalised.
 - Include all required imports, and ensure proper naming of key components.
 - Be concise Minimize any other prose.
@@ -19,21 +20,202 @@ You are a Senior Front-End Developer and an Expert in ReactJS, NextJS, Vite, Jav
 - If you do not know the answer, say so, instead of guessing.
 
 ### Coding Environment
+
 The user asks questions about the following coding languages:
-- ReactJS
-- NextJS
+
+- ReactJS (v19)
+- Vite (v7)
 - JavaScript
 - TypeScript
-- TailwindCSS
+- TailwindCSS (v4.x)
 - HTML
 - CSS
-- Vite
+
+### Project-Specific Patterns
+
+#### Component Organization
+
+- **UI Components**: Base components in `src/react-app/components/ui/` (Shadcn/ui)
+- **Feature Components**: Domain-specific components in dedicated folders:
+  - `ai-elements/` - AI message rendering (code-block, reasoning, tool, etc.)
+  - `chat/` - Chat interface components
+  - `chat-input/` - Input with model switcher
+  - `app-sidebar/` - Sidebar with chat history
+  - `settings/` - Settings panel and API key management
+  - `icons/` - AI provider icons
+  - `modals/` - Modal dialogs
+  - `motion-primitves/` - Animation components
+
+#### State Management
+
+- Use React Query (TanStack Query) for server state via tRPC
+- Use local state (useState) for UI state
+- Use custom hooks for reusable logic:
+  - `use-chat-session.ts` - Chat session management
+  - `use-chat-utils.ts` - Chat CRUD operations
+  - `use-chats.ts` - Chat list fetching
+  - `use-modal.ts` - Modal state management
+  - `useSession.ts` - Auth session hook
+  - `useUserPreferences.ts` - User settings hook
+
+#### Agent Integration
+
+- Use `useAgent` from `agents/react` for WebSocket connections
+- Use `useAgentChat` from `agents/ai-react` for AI chat functionality
+- Agent connections use pattern: `${userId}:${chatId}` for naming
 
 ### Code Implementation Guidelines
+
 Follow these rules when you write code:
+
 - Use early returns whenever possible to make the code more readable.
 - Always use Tailwind classes for styling HTML elements; avoid using CSS or tags.
-- Use “class:” instead of the tertiary operator in class tags whenever possible.
-- Use descriptive variable and function/const names. Also, event functions should be named with a “handle” prefix, like “handleClick” for onClick and “handleKeyDown” for onKeyDown.
-- Implement accessibility features on elements. For example, a tag should have a tabindex=“0”, aria-label, on:click, and on:keydown, and similar attributes.
-- Use consts instead of functions, for example, “const toggle = () =>”. Also, define a type if possible.
+- Use conditional class merging with `cn()` utility from `@/lib/utils`.
+- Use descriptive variable and function/const names. Also, event functions should be named with a "handle" prefix, like "handleClick" for onClick and "handleKeyDown" for onKeyDown.
+- Implement accessibility features on elements. For example, a tag should have a tabindex="0", aria-label, on:click, and on:keydown, and similar attributes.
+- Use consts instead of functions, for example, "const toggle = () =>". Also, define a type if possible.
+- Use `memo()` for expensive components that receive stable props.
+- Use `useCallback()` for event handlers passed to child components.
+- Use `useMemo()` for expensive computations.
+
+### TailwindCSS v4 Patterns
+
+- Use CSS variables for theming (defined in `index.css`)
+- Use `bg-linear-to-*` for gradients (not `bg-gradient-to-*`)
+- Use container queries with `@container` classes
+- Use `group-data-[state=*]:` for state-based styling
+- Common patterns:
+
+  ```tsx
+  // Gradient text
+  className =
+    "bg-linear-to-r from-primary to-primary/60 bg-clip-text text-transparent";
+
+  // Conditional visibility with sidebar state
+  className =
+    "group-data-[state=collapsed]:opacity-0 group-data-[state=expanded]:opacity-100";
+
+  // Container queries
+  className = "@container/main";
+  className = "@md:flex-row"; // responds to container width
+  ```
+
+### Import Aliases
+
+- `@/*` → `./src/react-app/*` (Frontend)
+- `@worker/*` → `./src/worker/*` (Backend)
+
+Example:
+
+```typescript
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { DEFUALT_MODEL } from "@worker/lib/config";
+```
+
+### Component Patterns
+
+#### Memoized Components
+
+```typescript
+import { memo, useCallback, useMemo } from "react";
+
+interface ChatItemProps {
+  chat: Chat;
+  isActive: boolean;
+  onDelete: (chatId: string) => void;
+}
+
+const ChatItem = memo(function ChatItem({ chat, isActive, onDelete }: ChatItemProps) {
+  const handleDelete = useCallback(() => {
+    onDelete(chat.id);
+  }, [chat.id, onDelete]);
+
+  return (
+    <SidebarMenuItem>
+      {/* ... */}
+    </SidebarMenuItem>
+  );
+});
+```
+
+#### Form Handling
+
+```typescript
+const [input, setInput] = useState("");
+const [isSubmitting, setIsSubmitting] = useState(false);
+
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!input.trim() || isSubmitting) return;
+
+  setIsSubmitting(true);
+  try {
+    await submitAction(input);
+    setInput("");
+  } catch (error) {
+    toast.error("Failed to submit");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+```
+
+#### Modal Pattern
+
+```typescript
+import { useModal } from "@/hooks/use-modal";
+
+const { openModal, closeModal, isOpen } = useModal();
+
+// Open modal
+<Button onClick={() => openModal("settings")}>Settings</Button>
+
+// Modal component
+{isOpen("settings") && <SettingsModal onClose={() => closeModal("settings")} />}
+```
+
+### Routing (TanStack Router)
+
+```typescript
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+
+// Navigation
+const navigate = useNavigate();
+navigate({ to: "/chat/$chatId", params: { chatId: "123" } });
+
+// With state
+navigate({
+  to: "/chat/$chatId",
+  params: { chatId: "123" },
+  state: { message: "Hello", chatConfig: { modelId: "gpt-4o" } },
+});
+
+// Reading state
+const routerState = useRouterState({
+  select: (state) => ({
+    message: state.location.state?.message,
+    chatConfig: state.location.state?.chatConfig,
+  }),
+});
+```
+
+### Toast Notifications
+
+```typescript
+import { toast } from "sonner";
+
+toast.success("Chat created");
+toast.error("Failed to send message", {
+  description: error.message,
+  closeButton: true,
+});
+```
+
+### AI Message Rendering
+
+The project uses a structured approach for rendering AI messages:
+
+- `ChatMessage` type with `parts` array containing different part types
+- `isToolUIPart()`, `isTextPart()`, etc. for type guards
+- Separate components for each part type (code-block, reasoning, tool, etc.)

@@ -1,4 +1,4 @@
-import { ChatRequestOptions } from "ai";
+import type { ChatAddToolApproveResponseFunction } from "ai";
 import { AssistantMessage } from "./assistant-message";
 import { UserMessage } from "./user-message";
 import { useState } from "react";
@@ -9,31 +9,19 @@ type MessageProps = {
   id: string;
   variant: ChatMessage["role"];
   parts: ChatMessage["parts"];
-  addToolResult: ({
-    toolCallId,
-    result,
-  }: {
-    toolCallId: string;
-    result: unknown;
-  }) => void;
+  addToolApprovalResponse: ChatAddToolApproveResponseFunction;
   status: "streaming" | "ready" | "submitted" | "error";
   isLastMessage: boolean;
-  regenerate: (
-    props: {
-      messageId?: string;
-    } & ChatRequestOptions
-  ) => Promise<void>;
   metadata?: ChatMessage["metadata"];
 };
 export const Message = ({
   children,
   variant,
   parts,
-  addToolResult,
+  addToolApprovalResponse,
   id,
   status,
   isLastMessage,
-  regenerate,
   metadata,
 }: MessageProps) => {
   const [copied, setCopied] = useState(false);
@@ -49,14 +37,13 @@ export const Message = ({
     <AssistantMessage
       children={children}
       parts={parts}
-      addToolResult={addToolResult}
+      addToolApprovalResponse={addToolApprovalResponse}
       copied={copied}
       copyToClipboard={copyToClipboard}
       id={id}
       status={status}
       isLastMessage={isLastMessage}
       metadata={metadata}
-      regenerate={regenerate}
     />
   ) : (
     <UserMessage
