@@ -21,7 +21,13 @@ import { Source, SourceContent, SourceTrigger } from "../prompt-kit/sources";
 import { useMemo } from "react";
 import { MODELS } from "@worker/lib/models";
 import { type ChatMessage } from "@/types/ai-types";
-import { Tool, ToolContent, ToolHeader, ToolInput } from "../ai-elements/tool";
+import {
+  Tool,
+  ToolContent,
+  ToolHeader,
+  ToolInput,
+  ToolOutput,
+} from "../ai-elements/tool";
 import {
   Confirmation,
   ConfirmationAccepted,
@@ -29,6 +35,7 @@ import {
   ConfirmationActions,
   ConfirmationRejected,
   ConfirmationRequest,
+  ConfirmationTitle,
 } from "../ai-elements/confirmation";
 type AssistantMessageProps = {
   children: string;
@@ -93,18 +100,19 @@ export const AssistantMessage = ({
               const toolCallId = part.toolCallId;
               return (
                 <div key={toolCallId} title={toolName} className="space-y-2">
-                  <Tool>
+                  <Tool defaultOpen={part.state === "approval-requested"}>
                     <ToolHeader
                       state={part.state}
                       type={part.type as ToolUIPart["type"]}
                     />
                     <ToolContent>
                       <ToolInput input={part.input} />
-                      {part.approval && (
-                        <Confirmation
-                          approval={part.approval}
-                          state={part.state}
-                        >
+                      <ToolOutput
+                        errorText={part.errorText}
+                        output={part.output}
+                      />
+                      <Confirmation approval={part.approval} state={part.state}>
+                        <ConfirmationTitle>
                           <ConfirmationRequest>
                             Do you approve this action?
                           </ConfirmationRequest>
@@ -114,34 +122,34 @@ export const AssistantMessage = ({
                           <ConfirmationRejected>
                             <span>You rejected this tool execution</span>
                           </ConfirmationRejected>
-                          {part.state === "approval-requested" && (
-                            <ConfirmationActions>
-                              <ConfirmationAction
-                                variant="outline"
-                                onClick={() =>
-                                  addToolApprovalResponse({
-                                    id: part.approval.id,
-                                    approved: false,
-                                  })
-                                }
-                              >
-                                Reject
-                              </ConfirmationAction>
-                              <ConfirmationAction
-                                variant="default"
-                                onClick={() =>
-                                  addToolApprovalResponse({
-                                    id: part.approval.id,
-                                    approved: true,
-                                  })
-                                }
-                              >
-                                Approve
-                              </ConfirmationAction>
-                            </ConfirmationActions>
-                          )}
-                        </Confirmation>
-                      )}
+                        </ConfirmationTitle>
+                        {part.state === "approval-requested" && (
+                          <ConfirmationActions>
+                            <ConfirmationAction
+                              variant="outline"
+                              onClick={() =>
+                                addToolApprovalResponse({
+                                  id: part.approval.id,
+                                  approved: false,
+                                })
+                              }
+                            >
+                              Reject
+                            </ConfirmationAction>
+                            <ConfirmationAction
+                              variant="default"
+                              onClick={() =>
+                                addToolApprovalResponse({
+                                  id: part.approval.id,
+                                  approved: true,
+                                })
+                              }
+                            >
+                              Approve
+                            </ConfirmationAction>
+                          </ConfirmationActions>
+                        )}
+                      </Confirmation>
                     </ToolContent>
                   </Tool>
                 </div>

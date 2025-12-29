@@ -19,7 +19,7 @@ export const ChatBox = ({
   const bottomRef = useRef<HTMLDivElement>(null);
   const lastMessage =
     messages?.length > 0 ? messages[messages.length - 1] : null;
-
+  console.log({ status, lastMessage });
   // Check if we should show loading animation
   const shouldShowLoading = useMemo(() => {
     if (status === "submitted") {
@@ -35,6 +35,10 @@ export const ChatBox = ({
       if (lastMessage?.role === "assistant") {
         const partsCount = lastMessage.parts?.length || 0;
         return partsCount <= 1;
+      }
+      const lastPart = lastMessage?.parts[lastMessage.parts.length - 1];
+      if (lastPart?.type === "text" && lastPart.state === "streaming") {
+        return true;
       }
     }
 

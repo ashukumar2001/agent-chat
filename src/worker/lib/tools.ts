@@ -1,6 +1,5 @@
 import { tool } from "ai";
 import { z } from "zod";
-// import type { AITool } from "agents/ai-react";
 
 // Server-side tool requiring approval (dynamic based on input)
 const getWeatherInformationTool = tool({
@@ -17,24 +16,25 @@ const getWeatherInformationTool = tool({
   },
 });
 
+const getRandomNumber = tool({
+  description: "Get a random number between 0 and 100",
+  inputSchema: z.object({}),
+  execute: async () => {
+    await new Promise((res) => setTimeout(res, 2000));
+    return Math.floor(Math.random() * 100);
+  },
+});
+
 // Client-executed tool (no execute = client handles via onToolCall)
 const getLocation = tool({
   description: "Get user location from browser",
   inputSchema: z.object({}),
   // No execute function
 });
-// // Client-executed tool (no execute = client handles via onToolCall)
-// const greetUser = tool({
-//   description: "Greet the user",
-//   inputSchema: z.object({}),
-//   execute: async () => {
-//     return "Hello, user! How can I assist you today?";
-//   },
-// });
 
 // Export AI SDK tools for server-side use
 export const tools = {
   getWeatherInformationTool,
   getLocation,
-  // greetUser,
+  getRandomNumber,
 };
