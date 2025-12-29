@@ -6,7 +6,6 @@ import {
 import { Check, Copy } from "lucide-react";
 import {
   type ChatAddToolApproveResponseFunction,
-  type ChatRequestOptions,
   getToolName,
   isToolUIPart,
   ToolUIPart,
