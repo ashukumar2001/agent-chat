@@ -813,9 +813,9 @@ export class AIChatAgent<
    */
   async onChatMessage(
     // biome-ignore lint/correctness/noUnusedFunctionParameters: overridden later
-    onFinish: StreamTextOnFinishCallback<ToolSet>,
+    _onFinish: StreamTextOnFinishCallback<ToolSet>,
     // biome-ignore lint/correctness/noUnusedFunctionParameters: overridden later
-    options?: OnChatMessageOptions
+    _options?: OnChatMessageOptions
   ): Promise<Response | undefined> {
     throw new Error(
       "recieved a chat message, override onChatMessage and return a Response to send to the client"
