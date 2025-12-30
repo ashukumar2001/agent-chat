@@ -83,7 +83,7 @@ export const ApiKeysSettings: React.FC = () => {
 
   const selectedProviderData = PROVIDERS.find((p) => p.id === selectedProvider);
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-4">
       <div>
         <h3 className="text-lg font-semibold">API Keys</h3>
         <p className="text-sm text-muted-foreground">
@@ -95,7 +95,7 @@ export const ApiKeysSettings: React.FC = () => {
       {/* Provider Cards */}
       <div>
         <h4 className="text-sm font-medium mb-3">Select Provider</h4>
-        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-2 sm:gap-3">
           {PROVIDERS.map((provider) => {
             const Icon = provider.icon;
             const hasKey = userApiKeysStatus[provider.id];
@@ -106,20 +106,20 @@ export const ApiKeysSettings: React.FC = () => {
                 key={provider.id}
                 onClick={() => handleProviderSelect(provider.id)}
                 className={cn(
-                  "relative p-3 border rounded-lg flex flex-col items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors",
+                  "relative p-2 sm:p-3 border rounded-lg flex flex-col items-center gap-1.5 sm:gap-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors",
                   isSelected
                     ? "border-orange-500 bg-orange-50 dark:bg-orange-950/20"
                     : "border-gray-200 dark:border-gray-700"
                 )}
               >
-                <div className="w-8 h-8 flex items-center justify-center">
-                  <Icon className="w-8 h-8" />
+                <div className="w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center">
+                  <Icon className="w-6 h-6 sm:w-8 sm:h-8" />
                 </div>
-                <span className="text-xs font-medium text-center">
+                <span className="text-[10px] sm:text-xs font-medium text-center leading-tight">
                   {provider.name}
                 </span>
                 {hasKey && (
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full" />
+                  <div className="absolute -top-1 -right-1 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-500 rounded-full" />
                 )}
               </button>
             );
@@ -130,14 +130,16 @@ export const ApiKeysSettings: React.FC = () => {
       {/* Selected Provider Details */}
       {selectedProviderData && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 flex items-center justify-center">
-                <selectedProviderData.icon className="w-10 h-10" />
+              <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
+                <selectedProviderData.icon className="w-8 h-8 sm:w-10 sm:h-10" />
               </div>
               <div>
-                <h4 className="font-medium">{selectedProviderData.name}</h4>
-                <p className="text-sm text-muted-foreground">
+                <h4 className="font-medium text-sm sm:text-base">
+                  {selectedProviderData.name}
+                </h4>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   {userApiKeysStatus[selectedProvider]
                     ? "Key configured"
                     : "No key configured"}
@@ -150,7 +152,7 @@ export const ApiKeysSettings: React.FC = () => {
               onClick={() =>
                 window.open(selectedProviderData.getKeyUrl, "_blank")
               }
-              className="text-xs"
+              className="text-xs w-full sm:w-auto"
             >
               <ExternalLink className="w-3 h-3 mr-1" />
               Get Key
@@ -170,7 +172,7 @@ export const ApiKeysSettings: React.FC = () => {
             </div>
 
             {/* Save Button */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2">
               {userApiKeysStatus[selectedProvider] && (
                 <Button
                   type="button"
@@ -178,7 +180,7 @@ export const ApiKeysSettings: React.FC = () => {
                   size="sm"
                   onClick={handleDeleteKey}
                   disabled={isDeleting}
-                  className="bg-red-500 hover:bg-red-600 text-white"
+                  className="bg-red-500 hover:bg-red-600 text-white w-full sm:w-auto"
                   aria-label="Delete API key"
                 >
                   Delete Key
@@ -187,7 +189,7 @@ export const ApiKeysSettings: React.FC = () => {
               <Button
                 onClick={handleSaveApiKey}
                 disabled={!hasChanges}
-                className="bg-orange-500 hover:bg-orange-600 text-white disabled:opacity-50"
+                className="bg-orange-500 hover:bg-orange-600 text-white disabled:opacity-50 w-full sm:w-auto"
               >
                 Save Key
               </Button>

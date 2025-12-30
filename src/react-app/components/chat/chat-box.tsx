@@ -1,4 +1,4 @@
-import type { ChatRequestOptions, ChatStatus } from "ai";
+import type { ChatAddToolApproveResponseFunction, ChatStatus } from "ai";
 import { ChatContainer } from "@/components/ui/chat-container";
 import { Message } from "./message";
 import { useRef, useMemo } from "react";
@@ -8,30 +8,18 @@ import { type ChatMessage } from "@/types/ai-types";
 type ChatBoxProps = {
   messages: ChatMessage[];
   status: ChatStatus;
-  addToolResult: ({
-    toolCallId,
-    result,
-  }: {
-    toolCallId: string;
-    result: unknown;
-  }) => void;
-  regenerate: (
-    props: {
-      messageId?: string;
-    } & ChatRequestOptions
-  ) => Promise<void>;
+  addToolApprovalResponse: ChatAddToolApproveResponseFunction;
 };
 export const ChatBox = ({
   messages,
   status,
-  addToolResult,
-  regenerate,
+  addToolApprovalResponse,
 }: ChatBoxProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const lastMessage =
     messages?.length > 0 ? messages[messages.length - 1] : null;
-
+  console.log({ status, lastMessage });
   // Check if we should show loading animation
   const shouldShowLoading = useMemo(() => {
     if (status === "submitted") {
@@ -47,6 +35,10 @@ export const ChatBox = ({
       if (lastMessage?.role === "assistant") {
         const partsCount = lastMessage.parts?.length || 0;
         return partsCount <= 1;
+      }
+      const lastPart = lastMessage?.parts[lastMessage.parts.length - 1];
+      if (lastPart?.type === "text" && lastPart.state === "streaming") {
+        return true;
       }
     }
 
@@ -72,7 +64,7 @@ export const ChatBox = ({
 
           return (
             <Message
-              addToolResult={addToolResult}
+              addToolApprovalResponse={addToolApprovalResponse}
               key={message.id}
               id={message.id}
               children={textContent}
@@ -80,7 +72,6 @@ export const ChatBox = ({
               parts={message.parts}
               status={status}
               isLastMessage={message.id === lastMessage?.id}
-              regenerate={regenerate}
               metadata={message.metadata}
             />
           );

@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
-import { useTheme } from "next-themes";
 import React, { useEffect, useState } from "react";
 import { codeToHtml } from "shiki";
+import { useTheme } from "../theme-provider";
 
 export type CodeBlockProps = {
   children?: React.ReactNode;
@@ -37,7 +37,7 @@ function CodeBlockCode({
   className,
   ...props
 }: CodeBlockCodeProps) {
-  const { resolvedTheme: appTheme } = useTheme();
+  const { theme: appTheme } = useTheme();
   const [highlightedHtml, setHighlightedHtml] = useState<string | null>(null);
 
   useEffect(() => {

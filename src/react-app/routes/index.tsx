@@ -3,18 +3,16 @@ import { ChatInput } from "@/components/chat-input";
 import { useState } from "react";
 import { DEFUALT_MODEL } from "@worker/lib/config";
 import { PromptSuggestion } from "@/components/prompt-kit/prompt-suggestion";
-import { useChats } from "@/hooks/use-chats";
-import { useSession } from "@/hooks/useSession";
 import { toast } from "sonner";
 import { motion } from "motion/react";
+import { useChatUtils } from "@/hooks/use-chat-utils";
 export const Route = createFileRoute("/")({
   component: RouteComponent,
 });
 
 function RouteComponent() {
   const navigate = useNavigate();
-  const { user } = useSession();
-  const { createNewChatMutation } = useChats(user?.id);
+  const { createNewChatMutation } = useChatUtils();
   const [selectedModel, setSelectedModel] = useState(DEFUALT_MODEL);
   const [agentInput, setAgentInput] = useState("");
   const [isWebSearchEnabled, setIsWebSearchEnabled] = useState(false);
@@ -46,7 +44,9 @@ function RouteComponent() {
           },
         },
       });
-    } catch (error) {}
+    } catch (error) {
+      console.warn(error);
+    }
   };
   return (
     <div className="@container/main relative flex h-full flex-col items-center justify-end md:justify-center">

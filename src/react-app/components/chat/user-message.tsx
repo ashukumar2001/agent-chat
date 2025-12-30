@@ -5,26 +5,19 @@ import {
   MessageActions,
   MessageContent,
 } from "../ui/message";
-import { Check, Copy, RefreshCcw } from "lucide-react";
-import { ChatRequestOptions } from "ai";
+import { Check, Copy } from "lucide-react";
 
 type UserMessageProps = {
   children: string;
   copied: boolean;
   copyToClipboard: () => void;
-  regenerate: (
-    props: {
-      messageId?: string;
-    } & ChatRequestOptions
-  ) => Promise<void>;
+
   id: string;
 };
 export const UserMessage = ({
   children,
   copied,
   copyToClipboard,
-  regenerate,
-  id,
 }: UserMessageProps) => {
   return (
     <Message
@@ -55,16 +48,6 @@ export const UserMessage = ({
             ) : (
               <Copy className="size-4" />
             )}
-          </button>
-        </MessageAction>
-        <MessageAction tooltip="Retry" side="bottom" delayDuration={0}>
-          <button
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-transparent transition"
-            aria-label="Retry"
-            type="button"
-            onClick={() => regenerate({ messageId: id })}
-          >
-            <RefreshCcw className="size-4" />
           </button>
         </MessageAction>
       </MessageActions>

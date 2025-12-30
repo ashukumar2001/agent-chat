@@ -2,15 +2,17 @@ import { useAgent } from "agents/react";
 import { ChatBox } from "./chat-box";
 import { ChatInput } from "../chat-input";
 import { useEffect, useMemo, useState } from "react";
-import { clientTools } from "@worker/lib/tools";
 import { DEFUALT_MODEL } from "@worker/lib/config";
-import { useChats } from "@/hooks/use-chats";
 import { toast } from "sonner";
-import { toolsRequiringConfirmation } from "@worker/lib/utils";
-import { AITool, useAgentChat } from "agents/ai-react";
-import { ChatRequestOptions, isToolUIPart, ToolUIPart } from "ai";
-import { ChatMessage } from "@/types/ai-types";
+import { useAgentChat } from "agents/ai-react";
+import {
+  ChatAddToolApproveResponseFunction,
+  isToolUIPart,
+  lastAssistantMessageIsCompleteWithToolCalls,
+} from "ai";
+import { ChatMessage, ChatMessageMetadata } from "@/types/ai-types";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
+import { useChatUtils } from "@/hooks/use-chat-utils";
 
 export const Chat = ({
   chatId,
@@ -30,11 +32,12 @@ export const Chat = ({
     },
   });
   const { createNewChatMutation, getChatById, updateChatMutation } =
-    useChats(userId);
+    useChatUtils();
   const currentChat = useMemo(
     () => (chatId ? getChatById(chatId) : null),
     [chatId, getChatById]
   );
+
   const agent = useAgent({
     agent: "chat-agent",
     name: `${userId}:${chatId}`,
@@ -42,10 +45,9 @@ export const Chat = ({
   const {
     messages: agentMessages,
     sendMessage,
-    addToolOutput: originalAddToolResult,
     status,
     stop,
-    regenerate,
+    addToolApprovalResponse: agentAddToolApprovalResponse,
   } = useAgentChat<unknown, ChatMessage>({
     agent,
     onError: (error) => {
@@ -54,48 +56,61 @@ export const Chat = ({
         closeButton: true,
       });
     },
-    experimental_automaticToolResolution: true,
-    toolsRequiringConfirmation,
-    tools: clientTools satisfies Record<string, AITool>,
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+    prepareSendMessagesRequest({
+      messages,
+      id,
+      body,
+      trigger,
+      headers,
+      api,
+      credentials,
+      messageId,
+    }) {
+      return {
+        headers,
+        body: {
+          messageId,
+          id,
+          messages,
+          trigger,
+          metadata: {
+            ...((body?.metadata || {
+              chatId,
+              userId,
+              model: selectedModel,
+              webSearch: isWebSearchEnabled,
+            }) as ChatMessageMetadata),
+          },
+        },
+        api,
+        credentials,
+      };
+    },
+    onToolCall: async (params) => {
+      if ("addToolOutput" in params) {
+        const { toolCall, addToolOutput } = params;
+        if (toolCall.toolName === "getLocation") {
+          const position = await new Promise<GeolocationPosition>(
+            (resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(resolve, reject);
+            }
+          );
+          addToolOutput({
+            toolCallId: toolCall.toolCallId,
+            output: {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            },
+          });
+        }
+      }
+    },
   });
-  // Wrapper to match ChatBox's expected signature
-  const addToolResult = async ({
-    toolCallId,
-    result,
-  }: {
-    toolCallId: string;
-    result: unknown;
-  }) => {
-    // Extract tool name from the message parts
-    const toolName = agentMessages
-      .flatMap((m) => m.parts || [])
-      .find(
-        (part) =>
-          part.type.startsWith("tool-") &&
-          (part as ToolUIPart).toolCallId === toolCallId
-      )
-      ?.type?.replace("tool-", "");
-    if (toolName) {
-      const _chatId = await ensureChatExists(
-        currentChat?.id,
-        agentInput,
-        chatId
-      );
-      if (!_chatId) return;
-      await originalAddToolResult({
-        tool: toolName,
-        toolCallId,
-        output: result,
-      });
-    }
-  };
 
-  // Tools requiring confirmation are auto-detected by useAgentChat from tools object
-  // Tools without execute function need confirmation (getWeatherInformation)
-  // Tools with execute function are automatic (getLocalTime)
   const pendingToolCallConfirmation = agentMessages.some((m) =>
     m.parts?.some(
-      (part) => isToolUIPart(part) && part.state === "input-available"
+      (part) => isToolUIPart(part) && part.state === "approval-requested"
     )
   );
 
@@ -125,6 +140,13 @@ export const Chat = ({
       }
     }
   };
+
+  const addToolApprovalResponse: ChatAddToolApproveResponseFunction = (
+    data
+  ) => {
+    agentAddToolApprovalResponse(data);
+    sendMessage();
+  };
   const ensureChatExists = async (
     chatId: string | undefined,
     input: string,
@@ -147,24 +169,24 @@ export const Chat = ({
     }
     return chatId;
   };
-  const handleRetryMessage = async ({
-    messageId,
-  }: {
-    messageId?: string;
-  } & ChatRequestOptions) => {
-    const _chatId = await ensureChatExists(currentChat?.id, agentInput, chatId);
-    regenerate({
-      messageId,
-      body: {
-        config: {
-          userId,
-          chatId: _chatId,
-          model: selectedModel,
-          webSearch: isWebSearchEnabled,
-        },
-      },
-    });
-  };
+  // const handleRetryMessage = async ({
+  //   messageId,
+  // }: {
+  //   messageId?: string;
+  // } & ChatRequestOptions) => {
+  //   const _chatId = await ensureChatExists(currentChat?.id, agentInput, chatId);
+  //   regenerate({
+  //     messageId,
+  //     body: {
+  //       metadata: {
+  //         model: selectedModel,
+  //         userId,
+  //         chatId: _chatId,
+  //         webSearch: isWebSearchEnabled,
+  //       },
+  //     },
+  //   });
+  // };
   const onSubmit = async (
     input?: string,
     chatConfig?: {
@@ -187,11 +209,11 @@ export const Chat = ({
         },
         {
           body: {
-            config: {
+            metadata: {
+              model: chatConfig?.modelId || selectedModel,
               userId,
               chatId: _chatId,
-              model: chatConfig?.modelId || selectedModel,
-              webSearch: chatConfig?.webSearchEnabled || isWebSearchEnabled,
+              webSearch: chatConfig?.webSearchEnabled ?? isWebSearchEnabled,
             },
           },
         }
@@ -231,9 +253,8 @@ export const Chat = ({
       <ChatBox
         key={currentChat?.id}
         messages={agentMessages}
-        addToolResult={addToolResult}
+        addToolApprovalResponse={addToolApprovalResponse}
         status={status}
-        regenerate={handleRetryMessage}
       />
       <div className="relative inset-x-0 bottom-0 z-50 mx-auto w-full max-w-3xl">
         <ChatInput
