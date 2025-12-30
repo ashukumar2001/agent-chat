@@ -4,33 +4,45 @@ import {
   MessageActions,
 } from "@/components/ui/message";
 import { Check, Copy } from "lucide-react";
-import { getToolName, isToolUIPart } from "ai";
-import { Tool, ToolPart } from "../ui/tool";
+import {
+  type ChatAddToolApproveResponseFunction,
+  getToolName,
+  isToolUIPart,
+  ToolUIPart,
+} from "ai";
 import {
   Reasoning,
   ReasoningContent,
   ReasoningTrigger,
 } from "../ai-elements/reasoning";
-import { Button } from "../ui/button";
 import { Response } from "../ai-elements/response";
-import { APPROVAL, toolsRequiringConfirmation } from "@worker/lib/utils";
 import { Source, SourceContent, SourceTrigger } from "../prompt-kit/sources";
 import { useMemo } from "react";
 import { MODELS } from "@worker/lib/models";
 import { type ChatMessage } from "@/types/ai-types";
+import {
+  Tool,
+  ToolContent,
+  ToolHeader,
+  ToolInput,
+  ToolOutput,
+} from "../ai-elements/tool";
+import {
+  Confirmation,
+  ConfirmationAccepted,
+  ConfirmationAction,
+  ConfirmationActions,
+  ConfirmationRejected,
+  ConfirmationRequest,
+  ConfirmationTitle,
+} from "../ai-elements/confirmation";
 type AssistantMessageProps = {
   children: string;
   copied: boolean;
   copyToClipboard: () => void;
   parts: ChatMessage["parts"];
   id: string;
-  addToolResult: ({
-    toolCallId,
-    result,
-  }: {
-    toolCallId: string;
-    result: unknown;
-  }) => void;
+  addToolApprovalResponse: ChatAddToolApproveResponseFunction;
   status: "streaming" | "ready" | "submitted" | "error";
   isLastMessage: boolean;
   metadata?: ChatMessage["metadata"];
@@ -43,19 +55,10 @@ export const AssistantMessage = ({
   id,
   status,
   isLastMessage,
-  addToolResult,
+  addToolApprovalResponse,
   metadata,
 }: AssistantMessageProps) => {
   const isContentEmpty = children !== null && children !== "";
-  const toolCallStatusList = parts?.filter(
-    (part) => part.type === "data-tool-call-status"
-  ) as {
-    type: "data-tool-call-status";
-    data: {
-      status: "loading" | "success" | "error" | undefined;
-      toolCallId: string;
-    };
-  }[];
   const modelConfig = useMemo(() => {
     if (metadata?.model) {
       return MODELS.find((model) => model.id === metadata.model);
@@ -92,53 +95,62 @@ export const AssistantMessage = ({
                 </Response>
               );
             } else if (isToolUIPart(part)) {
-              const toolCallStatus = toolCallStatusList?.find(
-                (status) => status.data.toolCallId === part.toolCallId
-              )?.data?.status;
               const toolName = getToolName(part);
               const toolCallId = part.toolCallId;
               return (
                 <div key={toolCallId} title={toolName} className="space-y-2">
-                  <Tool
-                    toolPart={
-                      {
-                        ...part,
-                        state:
-                          toolCallStatus === "loading"
-                            ? "input-streaming"
-                            : toolCallStatus === "success"
-                              ? "output-available"
-                              : toolCallStatus === "error"
-                                ? "output-error"
-                                : part.state,
-                      } as ToolPart
-                    }
-                  />
-                  {toolsRequiringConfirmation.includes(toolName) &&
-                    part.state === "input-available" && (
-                      <div>
-                        <Button
-                          onClick={async () => {
-                            addToolResult({
-                              toolCallId,
-                              result: APPROVAL.YES,
-                            });
-                          }}
-                        >
-                          Yes
-                        </Button>
-                        <Button
-                          onClick={async () => {
-                            addToolResult({
-                              toolCallId,
-                              result: APPROVAL.NO,
-                            });
-                          }}
-                        >
-                          No
-                        </Button>
-                      </div>
-                    )}
+                  <Tool defaultOpen={part.state === "approval-requested"}>
+                    <ToolHeader
+                      state={part.state}
+                      type={part.type as ToolUIPart["type"]}
+                    />
+                    <ToolContent>
+                      <ToolInput input={part.input} />
+                      <ToolOutput
+                        errorText={part.errorText}
+                        output={part.output}
+                      />
+                      <Confirmation approval={part.approval} state={part.state}>
+                        <ConfirmationTitle>
+                          <ConfirmationRequest>
+                            Do you approve this action?
+                          </ConfirmationRequest>
+                          <ConfirmationAccepted>
+                            <span>You approved this tool execution</span>
+                          </ConfirmationAccepted>
+                          <ConfirmationRejected>
+                            <span>You rejected this tool execution</span>
+                          </ConfirmationRejected>
+                        </ConfirmationTitle>
+                        {part.state === "approval-requested" && (
+                          <ConfirmationActions>
+                            <ConfirmationAction
+                              variant="outline"
+                              onClick={() =>
+                                addToolApprovalResponse({
+                                  id: part.approval.id,
+                                  approved: false,
+                                })
+                              }
+                            >
+                              Reject
+                            </ConfirmationAction>
+                            <ConfirmationAction
+                              variant="default"
+                              onClick={() =>
+                                addToolApprovalResponse({
+                                  id: part.approval.id,
+                                  approved: true,
+                                })
+                              }
+                            >
+                              Approve
+                            </ConfirmationAction>
+                          </ConfirmationActions>
+                        )}
+                      </Confirmation>
+                    </ToolContent>
+                  </Tool>
                 </div>
               );
             } else if (part.type === "reasoning") {

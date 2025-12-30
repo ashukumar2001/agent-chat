@@ -23,6 +23,23 @@ export default tseslint.config(
         "warn",
         { allowConstantExport: true },
       ],
+      // Allow tagged templates (for this.sql`...` in workers)
+      "@typescript-eslint/no-unused-expressions": [
+        "error",
+        { allowTaggedTemplates: true },
+      ],
+      // Allow underscore-prefixed unused vars (convention for intentionally unused)
+      // Also ignore interface/contract parameters that may be used by subclasses
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          args: "none",
+          varsIgnorePattern: "^_",
+          destructuredArrayIgnorePattern: "^_",
+          caughtErrors: "none",
+          ignoreRestSiblings: true,
+        },
+      ],
     },
   }
 );

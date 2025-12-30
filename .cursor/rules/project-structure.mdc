@@ -3,18 +3,20 @@ description:
 globs:
 alwaysApply: false
 ---
+
 # Project Structure Guide
 
-Version: 1.0.0
+Version: 1.1.0
 
 Complete guide to the project architecture and organization for this Cloudflare Workers + Agents + React with Vite application.
 
 ## Project Overview
 
-This is a full-stack application built with:
+This is a full-stack AI chat application called **Eddy** built with:
+
 - **Frontend**: React 19 with Vite, TanStack Router, TailwindCSS 4.x, and Shadcn/ui components
 - **Backend**: Cloudflare Workers with Hono framework
-- **AI Integration**: Cloudflare Agents with Durable Objects
+- **AI Integration**: Cloudflare Agents with Durable Objects, AI SDK for multi-model support
 - **Database**: Cloudflare D1 (SQLite) with Drizzle ORM
 - **Authentication**: Better Auth
 - **API Layer**: tRPC for type-safe API communication
@@ -30,23 +32,87 @@ project-root/
 ├── src/
 │   ├── react-app/         # React frontend application
 │   │   ├── components/    # Reusable React components
+│   │   │   ├── ai-elements/   # AI-specific UI components (code-block, reasoning, tool, etc.)
+│   │   │   ├── app-sidebar/   # Application sidebar with chat history
+│   │   │   ├── chat/          # Chat interface components
+│   │   │   ├── chat-input/    # Chat input with model switcher
+│   │   │   ├── icons/         # AI provider icons (OpenAI, Claude, Gemini, etc.)
+│   │   │   ├── kibo-ui/       # Theme switcher and UI utilities
+│   │   │   ├── modals/        # Modal dialogs (login, settings)
+│   │   │   ├── motion-primitves/  # Animation components
+│   │   │   ├── profile/       # User profile components
+│   │   │   ├── prompt-kit/    # Prompt suggestions and sources
+│   │   │   ├── settings/      # Settings panel with API key management
+│   │   │   └── ui/            # Shadcn/ui base components
 │   │   ├── hooks/         # Custom React hooks
-│   │   ├── lib/          # Frontend utilities and configurations
-│   │   ├── routes/       # TanStack Router page components
-│   │   ├── assets/       # Frontend-specific assets
-│   │   ├── index.css     # Global styles with TailwindCSS
-│   │   ├── main.tsx      # React app entry point
+│   │   │   ├── use-chat-session.ts   # Chat session management
+│   │   │   ├── use-chat-utils.ts     # Chat CRUD operations
+│   │   │   ├── use-chats.ts          # Chat list fetching
+│   │   │   ├── use-modal.ts          # Modal state management
+│   │   │   ├── useSession.ts         # Auth session hook
+│   │   │   └── useUserPreferences.ts # User settings hook
+│   │   ├── lib/           # Frontend utilities and configurations
+│   │   │   ├── auth-client.ts    # Better Auth client
+│   │   │   ├── helpers.ts        # Utility functions
+│   │   │   ├── providers.ts      # AI provider configurations
+│   │   │   ├── trpc-client.ts    # tRPC client setup
+│   │   │   └── utils.ts          # General utilities (cn, etc.)
+│   │   ├── routes/        # TanStack Router page components
+│   │   │   ├── __root.tsx        # Root layout
+│   │   │   ├── index.tsx         # Home page (new chat)
+│   │   │   └── chat/             # Chat routes
+│   │   │       ├── index.tsx     # Chat list
+│   │   │       └── $chatId/      # Dynamic chat route
+│   │   ├── types/         # TypeScript type definitions
+│   │   │   ├── ai-types.ts       # AI message types
+│   │   │   └── misc.ts           # Miscellaneous types
+│   │   ├── assets/        # Frontend-specific assets
+│   │   ├── index.css      # Global styles with TailwindCSS
+│   │   ├── main.tsx       # React app entry point
 │   │   └── routeTree.gen.ts # Auto-generated router tree
 │   └── worker/            # Cloudflare Workers backend
 │       ├── agents/        # AI Agent implementations
-│       ├── db/           # Database schemas and migrations
-│       ├── drizzle/      # Drizzle ORM configuration and migrations
-│       ├── lib/          # Backend utilities and configurations
-│       ├── routes/       # tRPC API route handlers
-│       ├── index.ts      # Worker entry point
-│       └── trpc.ts       # tRPC configuration
+│       │   ├── ai-chat-agent.ts  # Base AI chat agent class
+│       │   └── chat-agent.ts     # Main chat agent with multi-model support
+│       ├── db/            # Database schemas and utilities
+│       │   ├── db-types.ts       # Database type definitions
+│       │   ├── db.ts             # Database connection
+│       │   └── schema.ts         # Drizzle schema definitions
+│       ├── drizzle/       # Drizzle ORM migrations
+│       ├── durable_objects/  # Cloudflare Durable Objects
+│       │   └── user-settings.ts  # User API keys storage
+│       ├── lib/           # Backend utilities and configurations
+│       │   ├── auth.ts           # Better Auth configuration
+│       │   ├── config.ts         # App configuration (default model, prompts)
+│       │   ├── crypto.ts         # Encryption utilities
+│       │   ├── models/           # AI model configurations
+│       │   │   ├── data/         # Model definitions by provider
+│       │   │   │   ├── claude.ts
+│       │   │   │   ├── deepseek.ts
+│       │   │   │   ├── gemini.ts
+│       │   │   │   ├── grok.ts
+│       │   │   │   ├── llama.ts
+│       │   │   │   ├── mistral.ts
+│       │   │   │   ├── openai.ts
+│       │   │   │   ├── openrouter.ts
+│       │   │   │   └── perplexity.ts
+│       │   │   ├── index.ts      # Model aggregation
+│       │   │   └── types.ts      # ModelConfig type definition
+│       │   ├── provider-utils/   # AI provider utilities
+│       │   ├── tools.ts          # AI tool definitions
+│       │   ├── user-keys.ts      # User API key retrieval
+│       │   └── utils.ts          # General utilities
+│       ├── routes/        # tRPC API route handlers
+│       │   ├── index.ts          # Router aggregation
+│       │   ├── chats.ts          # Chat CRUD operations
+│       │   ├── greet.ts          # Health check
+│       │   └── userSettings.ts   # User settings management
+│       ├── types/         # Backend type definitions
+│       ├── index.ts       # Worker entry point
+│       └── trpc.ts        # tRPC configuration
 ├── auth-schema.ts         # Better Auth schema definitions
 ├── drizzle.config.ts      # Drizzle ORM configuration
+├── drizzle-local.config.ts # Local Drizzle configuration
 ├── wrangler.json          # Cloudflare Workers configuration
 ├── vite.config.ts         # Vite build configuration
 ├── package.json           # Project dependencies and scripts
@@ -56,15 +122,19 @@ project-root/
 ## Key Configuration Files
 
 ### [wrangler.json](mdc:wrangler.json)
+
 Main configuration for Cloudflare Workers deployment:
-- Defines environments (dev/prod)
-- Configures Durable Objects bindings for Agents
-- Sets up D1 database bindings
+
+- Defines environments (`development`/`production`)
+- Configures Durable Objects bindings for Agents (`ChatAgent`, `UserSettings`)
+- Sets up D1 database bindings (`EDDY_AI_CHAT_DB`)
 - Configures AI binding for Cloudflare AI models
 - Manages environment variables and secrets
 
 ### [vite.config.ts](mdc:vite.config.ts)
+
 Vite build configuration:
+
 - React plugin with React Compiler support
 - TanStack Router plugin for file-based routing
 - TailwindCSS 4.x integration
@@ -72,13 +142,17 @@ Vite build configuration:
 - Path aliases for clean imports
 
 ### [package.json](mdc:package.json)
+
 Dependency management and build scripts:
-- Production dependencies include React 19, Hono, Agents framework
+
+- Production dependencies include React 19, Hono, Agents framework, AI SDK
 - Development dependencies include Wrangler, Vite, TypeScript
 - Scripts for dev, build, deploy, and database operations
 
 ### [drizzle.config.ts](mdc:drizzle.config.ts)
+
 Database ORM configuration:
+
 - Configures Drizzle for Cloudflare D1
 - Sets migration directories and schema files
 - Environment-specific database connections
@@ -86,71 +160,104 @@ Database ORM configuration:
 ## Entry Points
 
 ### Frontend: [src/react-app/main.tsx](mdc:src/react-app/main.tsx)
+
 React application initialization:
-- Sets up TanStack Router
-- Configures tRPC client
-- Initializes authentication context
+
+- Sets up TanStack Router with QueryClient context
+- Configures scroll restoration and preloading
+- Extends router with custom history state for chat configuration
 
 ### Backend: [src/worker/index.ts](mdc:src/worker/index.ts)
+
 Cloudflare Worker entry point:
-- Exports Durable Object classes for Agents
-- Sets up Hono app with middleware
+
+- Exports Durable Object classes (`ChatAgent`, `UserSettings`)
+- Sets up Hono app with middleware (logger, agents)
 - Configures tRPC server
-- Handles authentication routes
-- Routes agent requests
+- Handles authentication routes via Better Auth
+- Routes agent requests with authentication
 
 ## Import Aliases
 
 Configured in `vite.config.ts` for clean imports:
+
 - `@/*` → `./src/react-app/*` (Frontend components and utilities)
 - `@worker/*` → `./src/worker/*` (Backend Worker code)
 
 Example usage:
+
 ```typescript
-import { Button } from "@/components/ui/button"
-import { auth } from "@worker/lib/auth"
+import { Button } from "@/components/ui/button";
+import { DEFUALT_MODEL } from "@worker/lib/config";
 ```
 
 ## Environment Configuration
 
 The project supports multiple environments through `wrangler.json`:
-- **dev**: Development environment with local D1 database
-- **prod**: Production environment with production database
+
+- **development**: Development environment with dev D1 database
+- **production**: Production environment with production database
 
 Environment-specific variables are stored in:
+
 - `.dev.vars.dev` - Development environment variables
 - `.dev.vars.prod` - Production environment variables
 
 ## Build Process
 
 1. **Development**: `npm run dev`
-   - Starts Vite dev server for React app
+   - Starts Vite dev server with `CLOUDFLARE_ENV=development`
    - Runs Cloudflare Workers locally with Wrangler
    - Hot reloading for both frontend and backend
 
 2. **Production Build**: `npm run build:prod`
    - TypeScript compilation
-   - Vite production build
+   - Vite production build with `CLOUDFLARE_ENV=production`
    - Wrangler bundling for Workers
 
 3. **Deployment**: `npm run deploy:prod`
    - Builds the application
    - Deploys to Cloudflare Workers
-   - Applies database migrations
 
 ## Database Workflow
 
 Using Drizzle ORM with Cloudflare D1:
+
 1. `npm run db:generate` - Generate migration files from schema
 2. `npm run db:push` - Push schema changes to database
-3. `npm run db:migrate:dev` - Apply migrations to dev environment
-4. `npm run db:migrate:prod` - Apply migrations to production
-5. `npm run db:studio` - Open Drizzle Studio for database management
+3. `npm run db:migrate-local` - Apply migrations locally
+4. `npm run db:migrate:dev` - Apply migrations to dev environment
+5. `npm run db:migrate:prod` - Apply migrations to production
+6. `npm run db:studio` - Open Drizzle Studio for database management
 
 ## Agent Architecture
 
 Agents are implemented as Durable Objects:
-- Each agent class extends the base `Agent` from the `agents` framework
+
+- `ChatAgent` extends `AIChatAgent` from the `agents` framework
+- `UserSettings` stores user API keys with encryption
 - State is persisted automatically via Durable Objects
 - WebSocket connections enable real-time communication
 - Agents can be accessed via HTTP routes or WebSocket connections
+- Authentication is enforced via `agentsMiddleware` with `onBeforeConnect`
+
+## Multi-Model Support
+
+The application supports multiple AI providers:
+
+- **Google**: Gemini models (default fallback)
+- **Anthropic**: Claude models
+- **OpenAI**: GPT models
+- **xAI**: Grok models
+- **Mistral**: Mistral models
+- **DeepSeek**: DeepSeek models
+- **Perplexity**: Perplexity models
+- **OpenRouter**: OpenRouter aggregated models
+- **Ollama**: Local Ollama models
+
+Models are configured in `src/worker/lib/models/` with support for:
+
+- Vision capabilities
+- Tool calling
+- Web search (Google Search integration)
+- Reasoning modes
