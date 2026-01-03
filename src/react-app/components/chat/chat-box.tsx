@@ -1,4 +1,8 @@
-import type { ChatAddToolApproveResponseFunction, ChatStatus } from "ai";
+import {
+  ToolUIPart,
+  type ChatAddToolApproveResponseFunction,
+  type ChatStatus,
+} from "ai";
 import { ChatContainer } from "@/components/ui/chat-container";
 import { Message } from "./message";
 import { useRef, useMemo } from "react";
@@ -19,7 +23,6 @@ export const ChatBox = ({
   const bottomRef = useRef<HTMLDivElement>(null);
   const lastMessage =
     messages?.length > 0 ? messages[messages.length - 1] : null;
-  console.log({ status, lastMessage });
   // Check if we should show loading animation
   const shouldShowLoading = useMemo(() => {
     if (status === "submitted") {
@@ -31,14 +34,23 @@ export const ChatBox = ({
       if (lastMessage?.role === "user") {
         return true;
       }
-      // Show loading if assistant message exists but has 0 or 1 parts (just starting)
+
       if (lastMessage?.role === "assistant") {
         const partsCount = lastMessage.parts?.length || 0;
-        return partsCount <= 1;
-      }
-      const lastPart = lastMessage?.parts[lastMessage.parts.length - 1];
-      if (lastPart?.type === "text" && lastPart.state === "streaming") {
-        return true;
+
+        if (partsCount <= 1) {
+          return true;
+        }
+        const lastPart = lastMessage?.parts?.[partsCount - 1];
+        if (
+          lastPart &&
+          ((lastPart.type.startsWith("tool-") &&
+            (lastPart as ToolUIPart).state === "approval-responded") ||
+            lastPart.type === "step-start" ||
+            (lastPart.type === "text" && lastPart.text === ""))
+        ) {
+          return true;
+        }
       }
     }
 

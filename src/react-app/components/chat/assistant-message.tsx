@@ -99,7 +99,7 @@ export const AssistantMessage = ({
               const toolCallId = part.toolCallId;
               return (
                 <div key={toolCallId} title={toolName} className="space-y-2">
-                  <Tool defaultOpen={part.state === "approval-requested"}>
+                  <Tool open={part.state === "approval-requested"}>
                     <ToolHeader
                       state={part.state}
                       type={part.type as ToolUIPart["type"]}
