@@ -54,13 +54,9 @@ export class ChatAgent extends AIChatAgent<Env> {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       onFinish: onFinish as any,
       tools: modelConfig.tools
-        ? {
-            ...(modelConfig.webSearch && webSearchEnabled
-              ? {
-                  google_search: google.tools.googleSearch({}),
-                }
-              : tools),
-          }
+        ? ((modelConfig.webSearch && webSearchEnabled
+            ? { google_search: google.tools.googleSearch({}) }
+            : tools) as ToolSet)
         : undefined,
       stopWhen: stepCountIs(5),
       abortSignal,
