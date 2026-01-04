@@ -813,9 +813,9 @@ export class AIChatAgent<
    */
   async onChatMessage(
     // biome-ignore lint/correctness/noUnusedFunctionParameters: overridden later
-    onFinish: StreamTextOnFinishCallback<ToolSet>,
+    _onFinish: StreamTextOnFinishCallback<ToolSet>,
     // biome-ignore lint/correctness/noUnusedFunctionParameters: overridden later
-    options?: OnChatMessageOptions
+    _options?: OnChatMessageOptions
   ): Promise<Response | undefined> {
     throw new Error(
       "recieved a chat message, override onChatMessage and return a Response to send to the client"
@@ -933,10 +933,12 @@ export class AIChatAgent<
 
   /**
    * Resolves a message for persistence, handling tool result merging.
-   * If the message contains tool parts with output-available state, checks if there's
+   * If the message contains tool parts with states that indicate progression
+   * (output-available, approval-responded, output-denied), checks if there's
    * an existing message with the same toolCallId that should be updated instead of
-   * creating a duplicate. This prevents the "Duplicate item found" error from OpenAI
-   * when client-side tool results arrive in a new request.
+   * creating a duplicate. This prevents duplicate messages when:
+   * - Client-side tool results arrive in a new request
+   * - User responds to tool approval requests
    *
    * @param message - The message to potentially merge
    * @returns The message with the correct ID (either original or merged)
@@ -946,16 +948,23 @@ export class AIChatAgent<
       return message;
     }
 
-    // Check if this message has tool parts with output-available state
+    // States that indicate a tool call has progressed and should merge with existing message
+    const mergeableStates = [
+      "output-available",
+      "approval-responded",
+      "output-denied",
+    ];
+
+    // Check if this message has tool parts with states that should trigger merging
     for (const part of message.parts) {
       if (
         "toolCallId" in part &&
         "state" in part &&
-        part.state === "output-available"
+        mergeableStates.includes(part.state as string)
       ) {
         const toolCallId = part.toolCallId as string;
 
-        // Look for an existing message with this toolCallId in input-available state
+        // Look for an existing message with this toolCallId
         const existingMessage = this._findMessageByToolCallId(toolCallId);
         if (existingMessage && existingMessage.id !== message.id) {
           // Found a match - merge by using the existing message's ID
@@ -1322,6 +1331,16 @@ export class AIChatAgent<
               providerMetadata?: ProviderMetadata;
             }
           | {
+              state: "approval-requested";
+              input: unknown;
+              approval: { id: string };
+            }
+          | {
+              state: "approval-responded";
+              input: unknown;
+              approval: { id: string; approved: boolean; reason?: string };
+            }
+          | {
               state: "output-available";
               input: unknown;
               output: unknown;
@@ -1332,6 +1351,10 @@ export class AIChatAgent<
               input: unknown;
               errorText: string;
               providerMetadata?: ProviderMetadata;
+            }
+          | {
+              state: "output-denied";
+              input: unknown;
             }
         )
       ) {
@@ -1352,6 +1375,7 @@ export class AIChatAgent<
           anyPart.errorText = anyOptions.errorText;
           anyPart.rawInput = anyOptions.rawInput ?? anyPart.rawInput;
           anyPart.preliminary = anyOptions.preliminary;
+          anyPart.approval = anyOptions.approval ?? anyPart.approval;
 
           if (
             anyOptions.providerMetadata != null &&
@@ -1370,6 +1394,9 @@ export class AIChatAgent<
             output: anyOptions.output,
             errorText: anyOptions.errorText,
             preliminary: anyOptions.preliminary,
+            ...(anyOptions.approval != null
+              ? { approval: anyOptions.approval }
+              : {}),
             ...(anyOptions.providerMetadata != null
               ? { callProviderMetadata: anyOptions.providerMetadata }
               : {}),
@@ -1395,6 +1422,18 @@ export class AIChatAgent<
               providerMetadata?: ProviderMetadata;
             }
           | {
+              state: "approval-requested";
+              input: unknown;
+              providerExecuted?: boolean;
+              approval: { id: string };
+            }
+          | {
+              state: "approval-responded";
+              input: unknown;
+              providerExecuted?: boolean;
+              approval: { id: string; approved: boolean; reason?: string };
+            }
+          | {
               state: "output-available";
               input: unknown;
               output: unknown;
@@ -1408,6 +1447,11 @@ export class AIChatAgent<
               errorText: string;
               providerExecuted?: boolean;
               providerMetadata?: ProviderMetadata;
+            }
+          | {
+              state: "output-denied";
+              input: unknown;
+              providerExecuted?: boolean;
             }
         )
       ) {
@@ -1427,6 +1471,7 @@ export class AIChatAgent<
           anyPart.errorText = anyOptions.errorText;
           anyPart.rawInput = anyOptions.rawInput;
           anyPart.preliminary = anyOptions.preliminary;
+          anyPart.approval = anyOptions.approval ?? anyPart.approval;
 
           // once providerExecuted is set, it stays for streaming
           anyPart.providerExecuted =
@@ -1450,6 +1495,9 @@ export class AIChatAgent<
             errorText: anyOptions.errorText,
             providerExecuted: anyOptions.providerExecuted,
             preliminary: anyOptions.preliminary,
+            ...(anyOptions.approval != null
+              ? { approval: anyOptions.approval }
+              : {}),
             ...(anyOptions.providerMetadata != null
               ? { callProviderMetadata: anyOptions.providerMetadata }
               : {}),
@@ -1812,6 +1860,55 @@ export class AIChatAgent<
                           errorText: data.errorText,
                         });
                       }
+
+                      break;
+                    }
+
+                    case "tool-approval-request": {
+                      // Handle tool approval request - update tool part to approval-requested state
+                      const toolInvocations = message.parts.filter(
+                        isToolUIPart
+                      ) as ToolUIPart[];
+
+                      const toolInvocation = toolInvocations.find(
+                        (invocation) =>
+                          invocation.toolCallId === data.toolCallId
+                      );
+
+                      if (!toolInvocation)
+                        throw new Error("Tool invocation not found");
+
+                      updateToolPart({
+                        toolCallId: data.toolCallId,
+                        toolName: getToolName(toolInvocation),
+                        state: "approval-requested",
+                        input: toolInvocation.input,
+                        approval: { id: data.approvalId },
+                      });
+
+                      break;
+                    }
+
+                    case "tool-output-denied": {
+                      // Handle tool output denied - tool approval was rejected
+                      const toolInvocations = message.parts.filter(
+                        isToolUIPart
+                      ) as ToolUIPart[];
+
+                      const toolInvocation = toolInvocations.find(
+                        (invocation) =>
+                          invocation.toolCallId === data.toolCallId
+                      );
+
+                      if (!toolInvocation)
+                        throw new Error("Tool invocation not found");
+
+                      updateToolPart({
+                        toolCallId: data.toolCallId,
+                        toolName: getToolName(toolInvocation),
+                        state: "output-denied",
+                        input: toolInvocation.input,
+                      });
 
                       break;
                     }

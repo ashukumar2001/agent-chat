@@ -30,6 +30,7 @@
     "src/react-app",
     "src/worker/lib/provider-utils",
     "src/worker/lib/models",
-    "src/worker/types/ai-types.ts"
+    "src/worker/types/ai-types.ts",
+    "src/websearch"
   ]
 }

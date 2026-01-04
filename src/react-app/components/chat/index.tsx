@@ -96,6 +96,7 @@ export const Chat = ({
               navigator.geolocation.getCurrentPosition(resolve, reject);
             }
           );
+          await new Promise((resolve) => setTimeout(resolve, 2000));
           addToolOutput({
             toolCallId: toolCall.toolCallId,
             output: {
@@ -169,24 +170,6 @@ export const Chat = ({
     }
     return chatId;
   };
-  // const handleRetryMessage = async ({
-  //   messageId,
-  // }: {
-  //   messageId?: string;
-  // } & ChatRequestOptions) => {
-  //   const _chatId = await ensureChatExists(currentChat?.id, agentInput, chatId);
-  //   regenerate({
-  //     messageId,
-  //     body: {
-  //       metadata: {
-  //         model: selectedModel,
-  //         userId,
-  //         chatId: _chatId,
-  //         webSearch: isWebSearchEnabled,
-  //       },
-  //     },
-  //   });
-  // };
   const onSubmit = async (
     input?: string,
     chatConfig?: {

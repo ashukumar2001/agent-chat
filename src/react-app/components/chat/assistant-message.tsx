@@ -36,6 +36,8 @@ import {
   ConfirmationRequest,
   ConfirmationTitle,
 } from "../ai-elements/confirmation";
+import WebSearchList from "../tool-ui/websearch-ddg";
+import { WebSearchToolInvocation } from "@worker/tools/websearch-ddg/tool";
 type AssistantMessageProps = {
   children: string;
   copied: boolean;
@@ -99,7 +101,10 @@ export const AssistantMessage = ({
               const toolCallId = part.toolCallId;
               return (
                 <div key={toolCallId} title={toolName} className="space-y-2">
-                  <Tool defaultOpen={part.state === "approval-requested"}>
+                  <Tool
+                    key={toolCallId}
+                    defaultOpen={part.state === "approval-requested"}
+                  >
                     <ToolHeader
                       state={part.state}
                       type={part.type as ToolUIPart["type"]}
@@ -151,6 +156,13 @@ export const AssistantMessage = ({
                       </Confirmation>
                     </ToolContent>
                   </Tool>
+
+                  {part.type === "tool-webSearchDDGTool" &&
+                    part.state === "output-available" && (
+                      <WebSearchList
+                        invocation={part as WebSearchToolInvocation}
+                      />
+                    )}
                 </div>
               );
             } else if (part.type === "reasoning") {
