@@ -2,9 +2,11 @@ import { Hono } from "hono";
 import { Checkout, CustomerPortal, Webhooks } from "@dodopayments/hono";
 import { getDodoConfig } from "../lib/dodo-payments";
 import { db } from "../db/db";
-import { customers, subscriptions, payments } from "../db/schema";
-import { eq } from "drizzle-orm";
+import { customers, subscriptions, payments, usage } from "../db/schema";
+import { eq, and, gte, lte } from "drizzle-orm";
 import { auth } from "../lib/auth";
+import { PLANS, getPeriodBoundaries, getPlanByProductId } from "../lib/plans";
+import { nanoid } from "nanoid";
 
 const paymentsApp = new Hono<{ Bindings: Env }>();
 
@@ -171,6 +173,7 @@ paymentsApp.post(
 
       const subData = payload.data;
 
+      // Update subscription status
       await db
         .update(subscriptions)
         .set({
@@ -180,6 +183,43 @@ paymentsApp.post(
           updatedAt: new Date(),
         })
         .where(eq(subscriptions.id, subData.subscription_id));
+
+      // Create a new usage record for the new billing period
+      // This effectively resets usage for the new period
+      const userId = subData.metadata?.userId as string;
+      if (userId) {
+        const plan = getPlanByProductId(subData.product_id);
+        const { start, end } = getPeriodBoundaries(plan);
+
+        // Check if a usage record already exists for this period
+        const existingUsage = await db
+          .select()
+          .from(usage)
+          .where(
+            and(
+              eq(usage.userId, userId),
+              gte(usage.periodStart, start),
+              lte(usage.periodEnd, end)
+            )
+          )
+          .limit(1);
+
+        // Only create new record if one doesn't exist
+        if (existingUsage.length === 0) {
+          await db.insert(usage).values({
+            id: nanoid(),
+            userId,
+            periodStart: start,
+            periodEnd: end,
+            fastModelRequests: 0,
+            premiumModelRequests: 0,
+            inputTokens: 0,
+            outputTokens: 0,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+        }
+      }
     },
 
     // Handle subscription cancelled

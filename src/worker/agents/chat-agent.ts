@@ -12,6 +12,7 @@ import { MODELS } from "../lib/models";
 import { createGoogleGenerativeAI, google } from "@ai-sdk/google";
 import { getUserKey } from "../lib/user-keys";
 import { AIChatAgent, type OnChatMessageOptions } from "./ai-chat-agent";
+import { checkUsageLimit, incrementUsage } from "../lib/usage";
 
 export class ChatAgent extends AIChatAgent<Env> {
   async onChatMessage(
@@ -28,8 +29,20 @@ export class ChatAgent extends AIChatAgent<Env> {
     if (!modelConfig) {
       throw new Error(`Model ${modelId} not found`);
     }
+
     let modelInstance: LanguageModel | null = null;
     const apiKey = await getUserKey(userId, modelConfig.providerId, this.env);
+    const hasOwnApiKey = Boolean(apiKey);
+
+    // Check usage limits before processing the request
+    // Only check if user doesn't have their own API key
+    if (!hasOwnApiKey && userId) {
+      const usageCheck = await checkUsageLimit(userId, modelId, hasOwnApiKey);
+      if (!usageCheck.allowed) {
+        throw new Error(usageCheck.reason || "Usage limit exceeded");
+      }
+    }
+
     // Use the dynamic model configuration instead of hardcoded model
     if (modelConfig.apiSdk && apiKey) {
       modelInstance = modelConfig.apiSdk(apiKey);
@@ -46,13 +59,29 @@ export class ChatAgent extends AIChatAgent<Env> {
         );
       }
     }
+
     // Use streamText directly and return with metadata
     const result = streamText({
       system: DEFAULT_SYSTEM_PROMPT,
       messages: await convertToModelMessages(this.messages),
       model: modelInstance!,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      onFinish: onFinish as any,
+      onFinish: async (finishResult) => {
+        // Increment usage after successful completion (only if using platform API)
+        if (!hasOwnApiKey && userId) {
+          try {
+            await incrementUsage(
+              userId,
+              modelId,
+              finishResult.usage?.inputTokens ?? 0,
+              finishResult.usage?.outputTokens ?? 0
+            );
+          } catch (error) {
+            console.error("Failed to increment usage:", error);
+          }
+        }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (onFinish as any)(finishResult);
+      },
       tools: modelConfig.tools
         ? ((modelConfig.webSearch && webSearchEnabled
             ? { google_search: google.tools.googleSearch({}) }
@@ -71,6 +100,7 @@ export class ChatAgent extends AIChatAgent<Env> {
       //   } as GoogleGenerativeAIProviderOptions,
       // },
     });
+
     return result.toUIMessageStreamResponse({
       sendSources: true,
       messageMetadata: ({ part }) => {

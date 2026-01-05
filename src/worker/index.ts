@@ -9,6 +9,7 @@ import { routeAgentRequest } from "agents";
 import { auth } from "./lib/auth";
 import { agentsMiddleware } from "hono-agents";
 import paymentsApp from "./routes/payments";
+import usageApp from "./routes/usage";
 
 const app = new Hono<{ Bindings: Env }>();
 app.use("*", logger());
@@ -30,6 +31,9 @@ app.get("/api/health", (c) => c.json({ status: true }, 200));
 
 // Dodo Payments routes
 app.route("/api/payments", paymentsApp);
+
+// Usage tracking routes
+app.route("/api/usage", usageApp);
 
 app.use("/trpc/*", async (c, next) =>
   trpcServer({

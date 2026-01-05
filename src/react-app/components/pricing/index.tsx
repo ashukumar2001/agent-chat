@@ -19,6 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useSubscription, useCustomer } from "@/hooks/use-subscription";
+import { useModal } from "@/hooks/use-modal";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useSession } from "@/hooks/useSession";
@@ -83,54 +84,58 @@ const PricingCard = memo(function PricingCard({
   return (
     <Card
       className={cn(
-        "relative flex flex-col transition-all duration-300",
-        product.highlight &&
-          "border-primary shadow-lg shadow-primary/10 scale-[1.02]",
-        "hover:shadow-xl hover:-translate-y-1"
+        "relative flex flex-col border-2 transition-colors",
+        product.highlight
+          ? "border-primary/20 bg-primary/5"
+          : "border-border/50 bg-card",
+        "hover:border-primary/40"
       )}
     >
       {product.highlight && (
-        <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 px-4">
-          Most Popular
-        </Badge>
+        <div className="absolute -top-px left-1/2 -translate-x-1/2">
+          <span className="bg-primary px-3 py-0.5 text-xs font-medium text-primary-foreground rounded-full">
+            Most Popular
+          </span>
+        </div>
       )}
 
-      <CardHeader className="text-center pb-2">
-        <div
-          className={cn(
-            "mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full",
-            product.highlight
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted text-muted-foreground"
-          )}
-        >
-          <Icon className="h-7 w-7" />
+      <CardHeader className="text-center pb-6 pt-8">
+        <div className="mb-6 flex items-center justify-center gap-2">
+          <Icon className="h-5 w-5 text-muted-foreground" />
+          <CardTitle className="text-xl font-semibold tracking-tight">
+            {product.name}
+          </CardTitle>
         </div>
-        <CardTitle className="text-2xl">{product.name}</CardTitle>
-        <CardDescription className="min-h-[40px]">
+        <CardDescription className="text-sm text-muted-foreground min-h-[40px]">
           {product.description}
         </CardDescription>
       </CardHeader>
 
-      <CardContent className="flex-1">
-        <div className="mb-6 text-center">
-          <span className="text-4xl font-bold tracking-tight">
-            {product.priceLabel}
-          </span>
-          <span className="text-muted-foreground">/{product.period}</span>
+      <CardContent className="flex-1 space-y-8">
+        <div className="text-center">
+          <div className="flex items-baseline justify-center gap-1">
+            <span className="text-5xl font-light tracking-tight">
+              {product.priceLabel}
+            </span>
+            <span className="text-sm text-muted-foreground font-normal">
+              /{product.period}
+            </span>
+          </div>
         </div>
 
-        <ul className="space-y-3">
+        <ul className="space-y-4">
           {product.features.map((feature) => (
             <li key={feature} className="flex items-start gap-3">
-              <Check className="h-5 w-5 shrink-0 text-primary mt-0.5" />
-              <span className="text-sm">{feature}</span>
+              <Check className="h-4 w-4 shrink-0 text-primary mt-0.5" />
+              <span className="text-sm text-muted-foreground leading-relaxed">
+                {feature}
+              </span>
             </li>
           ))}
         </ul>
       </CardContent>
 
-      <CardFooter>
+      <CardFooter className="pt-8">
         <Button
           className="w-full"
           variant={product.highlight ? "default" : "outline"}
@@ -156,18 +161,11 @@ const PricingCard = memo(function PricingCard({
   );
 });
 
-interface PricingModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
-
-export const PricingModal = memo(function PricingModal({
-  open,
-  onOpenChange,
-}: PricingModalProps) {
+export const PricingModal = memo(function PricingModal() {
   const { user } = useSession();
   const { subscription, hasSubscription, refetch } = useSubscription();
   const { customerId } = useCustomer();
+  const { isPricingOpen, closeModal } = useModal();
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -275,19 +273,28 @@ export const PricingModal = memo(function PricingModal({
 
   const currentPlanId = hasSubscription ? subscription?.productId : "free";
 
+  const handleOpenChange = useCallback(
+    (open: boolean) => {
+      if (!open) {
+        closeModal();
+      }
+    },
+    [closeModal]
+  );
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="text-center pb-4">
-          <DialogTitle className="text-3xl font-bold">
+    <Dialog open={isPricingOpen} onOpenChange={handleOpenChange}>
+      <DialogContent className="max-w-6xl sm:max-w-3xl max-h-[90vh] overflow-y-auto p-0">
+        <DialogHeader className="text-center px-6 pt-8 pb-8">
+          <DialogTitle className="text-2xl font-semibold tracking-tight">
             Choose Your Plan
           </DialogTitle>
-          <DialogDescription className="text-lg">
+          <DialogDescription className="text-sm text-muted-foreground mt-2">
             Unlock the full potential of AI-powered conversations
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-6 md:grid-cols-3 py-4">
+        <div className="grid gap-8 md:grid-cols-2 px-6 pb-8">
           {Object.values(PRODUCTS).map((product) => (
             <PricingCard
               key={product.id}
@@ -300,11 +307,11 @@ export const PricingModal = memo(function PricingModal({
         </div>
 
         {hasSubscription && customerId && (
-          <div className="mt-6 text-center">
+          <div className="px-6 pb-6 text-center border-t pt-6">
             <Button
               variant="ghost"
               onClick={handleManageSubscription}
-              className="text-muted-foreground hover:text-foreground"
+              className="text-sm text-muted-foreground hover:text-foreground"
             >
               <ExternalLink className="mr-2 h-4 w-4" />
               Manage Subscription
@@ -312,7 +319,7 @@ export const PricingModal = memo(function PricingModal({
           </div>
         )}
 
-        <p className="text-center text-sm text-muted-foreground mt-4">
+        <p className="text-center text-xs text-muted-foreground px-6 pb-6">
           All plans include a 14-day money-back guarantee. Cancel anytime.
         </p>
       </DialogContent>
@@ -330,25 +337,26 @@ export const UpgradeButton = memo(function UpgradeButton({
   className,
   variant = "default",
 }: UpgradeButtonProps) {
-  const [showPricing, setShowPricing] = useState(false);
+  const { openModal } = useModal();
   const { hasSubscription } = useSubscription();
+
+  const handleClick = useCallback(() => {
+    openModal("pricing");
+  }, [openModal]);
 
   if (hasSubscription) {
     return null;
   }
 
   return (
-    <>
-      <Button
-        variant={variant}
-        className={cn("gap-2", className)}
-        onClick={() => setShowPricing(true)}
-      >
-        <Sparkles className="h-4 w-4" />
-        Upgrade
-      </Button>
-      <PricingModal open={showPricing} onOpenChange={setShowPricing} />
-    </>
+    <Button
+      variant={variant}
+      className={cn("gap-2", className)}
+      onClick={handleClick}
+    >
+      <Sparkles className="h-4 w-4" />
+      Upgrade
+    </Button>
   );
 });
 
