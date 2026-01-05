@@ -8,6 +8,8 @@ import { appRouter } from "./routes";
 import { routeAgentRequest } from "agents";
 import { auth } from "./lib/auth";
 import { agentsMiddleware } from "hono-agents";
+import paymentsApp from "./routes/payments";
+
 const app = new Hono<{ Bindings: Env }>();
 app.use("*", logger());
 app.use(
@@ -25,6 +27,10 @@ app.use(
 );
 app.on(["POST", "GET"], "/api/auth/**", (c) => auth.handler(c.req.raw));
 app.get("/api/health", (c) => c.json({ status: true }, 200));
+
+// Dodo Payments routes
+app.route("/api/payments", paymentsApp);
+
 app.use("/trpc/*", async (c, next) =>
   trpcServer({
     router: appRouter,
