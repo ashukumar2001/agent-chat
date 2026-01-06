@@ -150,15 +150,15 @@ export const UsageCard = memo(function UsageCard({
           <TooltipContent side="bottom" className="max-w-xs">
             <div className="space-y-1">
               <p className="font-medium">{stats.plan.name} Plan</p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted/60">
                 {stats.usage.fastModelRequests} of {stats.limits.fastModelRequests} messages used {periodLabel}
               </p>
               {isPro && stats.limits.premiumModelRequests > 0 && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted/60">
                   Premium: {stats.usage.premiumModelRequests} / {stats.limits.premiumModelRequests}
                 </p>
               )}
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <p className="text-xs text-muted/60 flex items-center gap-1">
                 <Clock className="h-3 w-3" />
                 {periodDisplay}
               </p>

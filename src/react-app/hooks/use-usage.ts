@@ -89,9 +89,11 @@ const checkModelUsage = async (modelId: string): Promise<UsageCheckResult> => {
   return response.json();
 };
 
+export const USAGE_STATS_QUERY_KEY = ["usage-stats"];
+
 export const useUsageStats = () => {
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["usage-stats"],
+    queryKey: USAGE_STATS_QUERY_KEY,
     queryFn: fetchUsageStats,
     staleTime: 30 * 1000, // Consider data stale after 30 seconds
     refetchInterval: 60 * 1000, // Refetch every minute
