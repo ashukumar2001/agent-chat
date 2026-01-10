@@ -15,6 +15,29 @@ import { AIChatAgent, type OnChatMessageOptions } from "./ai-chat-agent";
 import { checkUsageLimit, incrementUsage } from "../lib/usage";
 
 export class ChatAgent extends AIChatAgent<Env> {
+  /**
+   * Creates an SSE-formatted error response that will be processed by _reply.
+   * This ensures errors go through the normal stream processing path.
+   */
+  private createErrorResponse(errorMessage: string): Response {
+    const errorStream = new ReadableStream({
+      start(controller) {
+        const encoder = new TextEncoder();
+        // Format as SSE (Server-Sent Events) with error event
+        const errorEvent = JSON.stringify({
+          type: "error",
+          errorText: errorMessage,
+        });
+        // SSE format: "data: {json}\n\n"
+        controller.enqueue(encoder.encode(`data: ${errorEvent}\n\n`));
+        controller.close();
+      },
+    });
+    return new Response(errorStream, {
+      headers: { "Content-Type": "text/event-stream; charset=utf-8" },
+    });
+  }
+
   async onChatMessage(
     onFinish: StreamTextOnFinishCallback<ToolSet>,
     { abortSignal, metadata }: OnChatMessageOptions
@@ -27,7 +50,7 @@ export class ChatAgent extends AIChatAgent<Env> {
     const modelConfig = MODELS.find((model) => model.id === modelId);
 
     if (!modelConfig) {
-      throw new Error(`Model ${modelId} not found`);
+      return this.createErrorResponse(`Model ${modelId} not found`);
     }
 
     let modelInstance: LanguageModel | null = null;
@@ -39,7 +62,8 @@ export class ChatAgent extends AIChatAgent<Env> {
     if (!hasOwnApiKey && userId) {
       const usageCheck = await checkUsageLimit(userId, modelId, hasOwnApiKey);
       if (!usageCheck.allowed) {
-        throw new Error(usageCheck.reason || "Usage limit exceeded");
+        const errorMessage = usageCheck.reason || "Usage limit exceeded";
+        return this.createErrorResponse(errorMessage);
       }
     }
 
@@ -54,7 +78,7 @@ export class ChatAgent extends AIChatAgent<Env> {
         });
         modelInstance = google("gemini-2.5-flash");
       } else {
-        throw new Error(
+        return this.createErrorResponse(
           `No API key configured for provider ${modelConfig.provider}`
         );
       }

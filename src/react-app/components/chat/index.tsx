@@ -222,9 +222,6 @@ export const Chat = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routerState]);
-  useEffect(() => {
-    console.log(agentMessages);
-  }, [agentMessages]);
 
   // Update selectedModel when currentChat changes (e.g., navigating to different chat)
   useEffect(() => {
