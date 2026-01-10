@@ -47,11 +47,11 @@
     "@trpc/tanstack-react-query": "^11.1.2",
     "agents": "^0.3.0",
     "ai": "^6.0.6",
-    "better-auth": "^1.2.7",
+    "better-auth": "^1.4.10",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
-    "dodopayments": "^2.13.1",
+    "dodopayments": "^2.14.0",
     "dodopayments-checkout": "^1.4.2",
     "drizzle-orm": "^0.43.1",
     "embla-carousel-react": "^8.6.0",
@@ -75,7 +75,7 @@
     "tailwindcss-animate": "^1.0.7",
     "use-stick-to-bottom": "^1.1.1",
     "vaul": "^1.1.2",
-    "zod": "^4.3.4"
+    "zod": "^4.3.5"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.14.0",
@@ -115,6 +115,7 @@
     "cf-typegen": "wrangler types -e development",
     "cf-typegen:prod": "wrangler types -e production",
     "db:generate": "drizzle-kit generate",
+    "db:generate-better-auth": "npx @better-auth/cli generate --config ./src/worker/lib/auth.ts --output ./src/worker/db/auth-schema.ts",
     "db:push": "drizzle-kit push",
     "db:studio": "CLOUDFLARE_ENV=development drizzle-kit studio",
     "db:migrate-local": "wrangler d1 migrations apply eddy-ai-chat-db-dev -e development",

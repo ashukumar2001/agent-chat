@@ -5,29 +5,15 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1755976142439,
-      "tag": "0000_cloudy_omega_red",
+      "when": 1767978663823,
+      "tag": "0000_bright_mercury",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "6",
-      "when": 1767551597068,
-      "tag": "0001_uneven_cardiac",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1736096400000,
-      "tag": "0002_usage_tracking",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1767632747147,
-      "tag": "0003_flawless_sinister_six",
+      "when": 1767978804892,
+      "tag": "0001_awesome_mentallo",
       "breakpoints": true
     }
   ]

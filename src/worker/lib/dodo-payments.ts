@@ -1,11 +1,11 @@
 import DodoPayments from "dodopayments";
-
+import { env } from "cloudflare:workers";
 /**
  * Get Dodo Payments client instance
  * Uses environment variable for API key
  */
 export const getDodoClient = () => {
-  const bearerToken = process.env.DODO_PAYMENTS_API_KEY;
+  const bearerToken = env.DODO_PAYMENTS_API_KEY;
 
   if (!bearerToken) {
     throw new Error("DODO_PAYMENTS_API_KEY environment variable is not set");
@@ -13,8 +13,7 @@ export const getDodoClient = () => {
 
   return new DodoPayments({
     bearerToken,
-    environment:
-      process.env.CLOUDFLARE_ENV === "prod" ? "live_mode" : "test_mode",
+    environment: env.CLOUDFLARE_ENV === "prod" ? "live_mode" : "test_mode",
   });
 };
 
@@ -22,8 +21,8 @@ export const getDodoClient = () => {
  * Dodo Payments configuration
  */
 export const getDodoConfig = () => ({
-  bearerToken: process.env.DODO_PAYMENTS_API_KEY!,
-  webhookKey: process.env.DODO_PAYMENTS_WEBHOOK_KEY!,
+  bearerToken: env.DODO_PAYMENTS_API_KEY!,
+  webhookKey: env.DODO_PAYMENTS_WEBHOOK_KEY!,
   environment:
     process.env.CLOUDFLARE_ENV === "prod"
       ? ("live_mode" as const)

@@ -1,70 +1,15 @@
 import { Hono } from "hono";
-import { Checkout, CustomerPortal, Webhooks } from "@dodopayments/hono";
-import { getDodoConfig } from "../lib/dodo-payments";
+import { Webhooks } from "@dodopayments/hono";
 import { db } from "../db/db";
 import { customers, subscriptions, payments, usage } from "../db/schema";
 import { eq, and, gte, lte } from "drizzle-orm";
 import { auth } from "../lib/auth";
-import { PLANS, getPeriodBoundaries, getPlanByProductId } from "../lib/plans";
+import { getDodoConfig } from "../lib/dodo-payments";
+import { getPeriodBoundaries, getPlanByProductId } from "../lib/plans";
 import { nanoid } from "nanoid";
 
 const paymentsApp = new Hono<{ Bindings: Env }>();
-
-// Checkout endpoint - creates a checkout session
-// Usage: POST /api/payments/checkout with body { product_id, customer, billing, metadata }
-paymentsApp.post("/checkout", async (c, next) => {
-  const config = getDodoConfig();
-  console.log("Checkout config:", {
-    environment: config.environment,
-    hasApiKey: !!config.bearerToken,
-    returnUrl: `${process.env.BETTER_AUTH_URL}/chat`,
-  });
-
-  // Log request body for debugging (remove in production)
-  const body = await c.req.json();
-  console.log("Checkout request body:", JSON.stringify(body, null, 2));
-
-  // Reconstruct request with the body
-  const newRequest = new Request(c.req.url, {
-    method: "POST",
-    headers: c.req.raw.headers,
-    body: JSON.stringify(body),
-  });
-
-  // Create a new context with the cloned request
-  c.req.raw = newRequest;
-
-  try {
-    const checkoutHandler = Checkout({
-      ...config,
-      returnUrl: `${process.env.BETTER_AUTH_URL}/chat`,
-      type: "dynamic",
-    });
-
-    return await checkoutHandler(c);
-  } catch (error) {
-    console.error("Error when creating checkout:", error);
-    return c.json(
-      {
-        error: "Checkout failed",
-        message:
-          error instanceof Error ? error.message : "Unknown error occurred",
-        hint: "Check if the product ID exists in your DodoPayments dashboard and matches the environment mode (test/live)",
-      },
-      400
-    );
-  }
-});
-
-// Customer Portal - redirects to customer's billing portal
-// Usage: GET /api/payments/portal?customerId=cust_xxx
-paymentsApp.get(
-  "/portal",
-  CustomerPortal({
-    ...getDodoConfig(),
-  })
-);
-
+// /api/payments/webhooks
 // Webhook handler for payment events
 paymentsApp.post(
   "/webhooks",
@@ -74,6 +19,7 @@ paymentsApp.post(
     // Handle successful payment
     onPaymentSucceeded: async (payload) => {
       console.log("Payment succeeded:", payload.data.payment_id);
+      console.log(JSON.stringify(payload.data));
 
       const paymentData = payload.data;
 
@@ -337,7 +283,6 @@ paymentsApp.get("/subscription", async (c) => {
     },
   });
 });
-
 // Get user's customer ID for portal access
 paymentsApp.get("/customer", async (c) => {
   const session = await auth.api.getSession({ headers: c.req.raw.headers });
@@ -358,5 +303,4 @@ paymentsApp.get("/customer", async (c) => {
 
   return c.json({ customerId: userCustomer[0].id });
 });
-
 export default paymentsApp;

@@ -28,10 +28,8 @@ app.use(
 );
 app.on(["POST", "GET"], "/api/auth/**", (c) => auth.handler(c.req.raw));
 app.get("/api/health", (c) => c.json({ status: true }, 200));
-
 // Dodo Payments routes
 app.route("/api/payments", paymentsApp);
-
 // Usage tracking routes
 app.route("/api/usage", usageApp);
 

@@ -23,6 +23,7 @@ import { useModal } from "@/hooks/use-modal";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useSession } from "@/hooks/useSession";
+import { authClient } from "@/lib/auth-client";
 
 // Product IDs from Dodo Payments dashboard
 // Replace these with your actual product IDs
@@ -219,41 +220,22 @@ export const PricingModal = memo(function PricingModal() {
       setIsLoading(true);
 
       try {
-        // Create checkout session via our backend
-        const response = await fetch("/api/payments/checkout", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
+        const { data, error } = await authClient.dodopayments.checkoutSession({
+          product_cart: [
+            {
+              product_id: productId,
+              quantity: 1,
+            },
+          ],
+          metadata: {
+            userId: user.id,
           },
-          body: JSON.stringify({
-            product_id: productId,
-            customer: {
-              email: user.email,
-              name: user.name || "",
-            },
-            billing: {
-              city: "",
-              country: "US",
-              state: "",
-              street: "",
-              zipcode: "",
-            },
-            metadata: {
-              userId: user.id,
-            },
-          }),
+          billing_currency: "INR",
+          billing_address: {
+            country: "IN",
+          },
         });
-
-        if (!response.ok) {
-          throw new Error("Failed to create checkout session");
-        }
-
-        const data = (await response.json()) as { checkout_url: string };
-
-        // Open Dodo Payments overlay checkout
-        DodoPayments.Checkout.open({
-          checkoutUrl: data.checkout_url,
-        });
+        console.log(data);
       } catch (error) {
         console.error("Checkout error:", error);
         toast.error("Checkout failed", {
@@ -265,9 +247,13 @@ export const PricingModal = memo(function PricingModal() {
     [user]
   );
 
-  const handleManageSubscription = useCallback(() => {
+  const handleManageSubscription = useCallback(async () => {
     if (customerId) {
-      window.open(`/api/payments/portal?customerId=${customerId}`, "_blank");
+      const { data: customerPortal, error } =
+        await authClient.dodopayments.customer.portal();
+      if (customerPortal && customerPortal.redirect) {
+        window.location.href = customerPortal.url;
+      }
     }
   }, [customerId]);
 
@@ -344,18 +330,20 @@ export const UpgradeButton = memo(function UpgradeButton({
     openModal("pricing");
   }, [openModal]);
 
-  if (hasSubscription) {
-    return null;
-  }
-
   return (
     <Button
       variant={variant}
       className={cn("gap-2", className)}
       onClick={handleClick}
     >
-      <Sparkles className="h-4 w-4" />
-      Upgrade
+      {hasSubscription ? (
+        "Manage Plan"
+      ) : (
+        <>
+          <Sparkles className="h-4 w-4" />
+          Upgrade
+        </>
+      )}
     </Button>
   );
 });

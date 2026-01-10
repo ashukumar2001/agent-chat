@@ -1,1 +1,0 @@
-DROP INDEX `idx_usage_user_period`;
