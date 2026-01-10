@@ -118,6 +118,7 @@
     "db:generate-better-auth": "npx @better-auth/cli generate --config ./src/worker/lib/auth.ts --output ./src/worker/db/auth-schema.ts",
     "db:push": "drizzle-kit push",
     "db:studio": "CLOUDFLARE_ENV=development drizzle-kit studio",
+    "db:studio-local": "CLOUDFLARE_ENV=development drizzle-kit studio --config drizzle-local.config.ts",
     "db:migrate-local": "wrangler d1 migrations apply eddy-ai-chat-db-dev -e development",
     "db:migrate:dev": "CLOUDFLARE_ENV=development drizzle-kit migrate",
     "db:migrate:prod": "CLOUDFLARE_ENV=production drizzle-kit migrate"

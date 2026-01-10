@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ChatIndexRouteImport } from './routes/chat/index'
 import { Route as ChatChatIdIndexRouteImport } from './routes/chat/$chatId/index'
-import { Route as ApiAuthDodopaymentsWebhooksRouteImport } from './routes/api/auth/dodopayments/webhooks'
 import { Route as ApiAuthCallbackProviderRouteImport } from './routes/api/auth/callback/$provider'
 
 const IndexRoute = IndexRouteImport.update({
@@ -30,12 +29,6 @@ const ChatChatIdIndexRoute = ChatChatIdIndexRouteImport.update({
   path: '/chat/$chatId/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiAuthDodopaymentsWebhooksRoute =
-  ApiAuthDodopaymentsWebhooksRouteImport.update({
-    id: '/api/auth/dodopayments/webhooks',
-    path: '/api/auth/dodopayments/webhooks',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const ApiAuthCallbackProviderRoute = ApiAuthCallbackProviderRouteImport.update({
   id: '/api/auth/callback/$provider',
   path: '/api/auth/callback/$provider',
@@ -47,14 +40,12 @@ export interface FileRoutesByFullPath {
   '/chat': typeof ChatIndexRoute
   '/chat/$chatId': typeof ChatChatIdIndexRoute
   '/api/auth/callback/$provider': typeof ApiAuthCallbackProviderRoute
-  '/api/auth/dodopayments/webhooks': typeof ApiAuthDodopaymentsWebhooksRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/chat': typeof ChatIndexRoute
   '/chat/$chatId': typeof ChatChatIdIndexRoute
   '/api/auth/callback/$provider': typeof ApiAuthCallbackProviderRoute
-  '/api/auth/dodopayments/webhooks': typeof ApiAuthDodopaymentsWebhooksRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,30 +53,18 @@ export interface FileRoutesById {
   '/chat/': typeof ChatIndexRoute
   '/chat/$chatId/': typeof ChatChatIdIndexRoute
   '/api/auth/callback/$provider': typeof ApiAuthCallbackProviderRoute
-  '/api/auth/dodopayments/webhooks': typeof ApiAuthDodopaymentsWebhooksRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/chat'
-    | '/chat/$chatId'
-    | '/api/auth/callback/$provider'
-    | '/api/auth/dodopayments/webhooks'
+  fullPaths: '/' | '/chat' | '/chat/$chatId' | '/api/auth/callback/$provider'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/chat'
-    | '/chat/$chatId'
-    | '/api/auth/callback/$provider'
-    | '/api/auth/dodopayments/webhooks'
+  to: '/' | '/chat' | '/chat/$chatId' | '/api/auth/callback/$provider'
   id:
     | '__root__'
     | '/'
     | '/chat/'
     | '/chat/$chatId/'
     | '/api/auth/callback/$provider'
-    | '/api/auth/dodopayments/webhooks'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -93,7 +72,6 @@ export interface RootRouteChildren {
   ChatIndexRoute: typeof ChatIndexRoute
   ChatChatIdIndexRoute: typeof ChatChatIdIndexRoute
   ApiAuthCallbackProviderRoute: typeof ApiAuthCallbackProviderRoute
-  ApiAuthDodopaymentsWebhooksRoute: typeof ApiAuthDodopaymentsWebhooksRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -119,13 +97,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChatChatIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/auth/dodopayments/webhooks': {
-      id: '/api/auth/dodopayments/webhooks'
-      path: '/api/auth/dodopayments/webhooks'
-      fullPath: '/api/auth/dodopayments/webhooks'
-      preLoaderRoute: typeof ApiAuthDodopaymentsWebhooksRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/auth/callback/$provider': {
       id: '/api/auth/callback/$provider'
       path: '/api/auth/callback/$provider'
@@ -141,7 +112,6 @@ const rootRouteChildren: RootRouteChildren = {
   ChatIndexRoute: ChatIndexRoute,
   ChatChatIdIndexRoute: ChatChatIdIndexRoute,
   ApiAuthCallbackProviderRoute: ApiAuthCallbackProviderRoute,
-  ApiAuthDodopaymentsWebhooksRoute: ApiAuthDodopaymentsWebhooksRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
