@@ -1,9 +1,4 @@
-/**
- * Plan configuration for usage limits
- * 
- * Free tier: 5 messages per day (DeepSeek & Gemini Flash only)
- * Pro tier: 1,200 fast model messages/month, 50 premium model messages/month
- */
+import { env } from "cloudflare:workers";
 
 export type PlanId = "free" | "pro";
 
@@ -75,6 +70,7 @@ export const FREE_TIER_MODELS = [
   "gemini-1.5-flash",
   "gemini-1.5-flash-latest",
   "gemini-2.5-flash-preview-05-20",
+  "gpt-4.1-nano",
 ];
 
 export const PLANS: Record<PlanId, PlanConfig> = {
@@ -94,14 +90,15 @@ export const PLANS: Record<PlanId, PlanConfig> = {
     id: "pro",
     name: "Pro",
     limits: {
-      fastModelRequests: 1200, // 1,200 fast model messages/month
-      premiumModelRequests: 50, // 50 premium model messages/month
+      fastModelRequests: Number(env.PRO_PLAN_FAST_MODEL_REQUESTS || 0), // fast model messages/month
+      premiumModelRequests: Number(env.PRO_PLAN_PREMIUM_MODEL_REQUESTS || 0), // premium model messages/month
       periodType: "month",
       allowedModels: null, // All models allowed
       historyRetentionDays: 30, // 30-day history
     },
     // This should match the product ID from Dodo Payments
-    productId: process.env.VITE_DODO_PRO_PRODUCT_ID || "pdt_0NVZisCmPSb7gDRkzIgKE",
+    productId:
+      process.env.VITE_DODO_PRO_PRODUCT_ID || "pdt_0NVZisCmPSb7gDRkzIgKE",
   },
 };
 
@@ -115,7 +112,10 @@ export const isPremiumModel = (modelId: string): boolean => {
 /**
  * Check if a model is allowed for a plan
  */
-export const isModelAllowedForPlan = (modelId: string, plan: PlanConfig): boolean => {
+export const isModelAllowedForPlan = (
+  modelId: string,
+  plan: PlanConfig
+): boolean => {
   // If allowedModels is null, all models are allowed
   if (plan.limits.allowedModels === null) {
     return true;
@@ -137,9 +137,11 @@ export const getPlanByProductId = (productId: string | null): PlanConfig => {
 /**
  * Get period boundaries for a plan
  */
-export const getPeriodBoundaries = (plan: PlanConfig): { start: Date; end: Date } => {
+export const getPeriodBoundaries = (
+  plan: PlanConfig
+): { start: Date; end: Date } => {
   const now = new Date();
-  
+
   if (plan.limits.periodType === "day") {
     // Daily period: midnight to midnight
     const start = new Date(now);
@@ -154,4 +156,3 @@ export const getPeriodBoundaries = (plan: PlanConfig): { start: Date; end: Date 
     return { start, end };
   }
 };
-

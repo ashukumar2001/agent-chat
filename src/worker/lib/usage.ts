@@ -6,7 +6,7 @@
 
 import { db } from "../db/db";
 import { usage, subscriptions } from "../db/schema";
-import { eq, and, gte, lte } from "drizzle-orm";
+import { eq, and, gte, lte, desc } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import {
   PLANS,
@@ -61,10 +61,12 @@ export interface UsageStats {
  * Get the user's current plan based on their subscription
  */
 export const getUserPlan = async (userId: string): Promise<PlanConfig> => {
+  // Get the most recent subscription
   const userSubscription = await db
     .select()
     .from(subscriptions)
     .where(eq(subscriptions.userId, userId))
+    .orderBy(desc(subscriptions.createdAt))
     .limit(1);
 
   if (!userSubscription.length) {

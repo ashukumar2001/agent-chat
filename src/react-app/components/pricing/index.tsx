@@ -53,7 +53,7 @@ const PRODUCTS = {
     period: "month",
     description: "Great value for daily use",
     features: [
-      "1,200 fast model messages/month",
+      `1200 fast model messages/month`,
       "50 premium model messages/month",
       "GPT-4o, Claude Sonnet, Gemini Pro",
       "30-day message history",
@@ -107,7 +107,7 @@ const PricingCard = memo(function PricingCard({
             {product.name}
           </CardTitle>
         </div>
-        <CardDescription className="text-sm text-muted-foreground min-h-[40px]">
+        <CardDescription className="text-sm text-muted-foreground min-h-10">
           {product.description}
         </CardDescription>
       </CardHeader>

@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { Webhooks } from "@dodopayments/hono";
 import { db } from "../db/db";
 import { customers, subscriptions, payments, usage } from "../db/schema";
-import { eq, and, gte, lte } from "drizzle-orm";
+import { eq, and, gte, lte, desc } from "drizzle-orm";
 import { auth } from "../lib/auth";
 import { getDodoConfig } from "../lib/dodo-payments";
 import { getPeriodBoundaries, getPlanByProductId } from "../lib/plans";
@@ -253,10 +253,12 @@ paymentsApp.get("/subscription", async (c) => {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
+  // Get the most recent subscription, prioritizing active ones
   const userSubscription = await db
     .select()
     .from(subscriptions)
     .where(eq(subscriptions.userId, session.user.id))
+    .orderBy(desc(subscriptions.createdAt))
     .limit(1);
 
   if (!userSubscription.length) {
