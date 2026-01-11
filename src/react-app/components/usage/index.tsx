@@ -126,7 +126,13 @@ export const UsageCard = memo(function UsageCard({
     stats.usage.fastModelRequests,
     stats.limits.fastModelRequests
   );
-  const isNearLimit = fastPercentage >= 75;
+  const premiumPercentage = calculateUsagePercentage(
+    stats.usage.premiumModelRequests,
+    stats.limits.premiumModelRequests
+  );
+  const isFastNearLimit = fastPercentage >= 75;
+  const isPremiumNearLimit = premiumPercentage >= 75;
+  const isNearLimit = isFastNearLimit || isPremiumNearLimit;
 
   if (compact) {
     return (
@@ -135,27 +141,46 @@ export const UsageCard = memo(function UsageCard({
           <TooltipTrigger asChild>
             <div
               className={cn(
-                "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs cursor-pointer transition-colors",
+                "flex items-center gap-3 px-3 py-1.5 rounded-full text-xs cursor-pointer transition-colors",
                 isNearLimit
                   ? "bg-destructive/10 text-destructive hover:bg-destructive/20"
                   : "bg-muted hover:bg-muted/80"
               )}
             >
-              <Zap className="h-3 w-3" />
-              <span>
-                {stats.usage.fastModelRequests} / {stats.limits.fastModelRequests}
-              </span>
+              <div className={cn(
+                "flex items-center gap-1",
+                isFastNearLimit && "text-destructive"
+              )}>
+                <Zap className="h-3 w-3" />
+                <span>
+                  {stats.usage.fastModelRequests}/{stats.limits.fastModelRequests}
+                </span>
+              </div>
+              {stats.limits.premiumModelRequests > 0 && (
+                <>
+                  <span className="text-muted-foreground">|</span>
+                  <div className={cn(
+                    "flex items-center gap-1",
+                    isPremiumNearLimit && "text-destructive"
+                  )}>
+                    <Sparkles className="h-3 w-3" />
+                    <span>
+                      {stats.usage.premiumModelRequests}/{stats.limits.premiumModelRequests}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="max-w-xs">
             <div className="space-y-1">
               <p className="font-medium">{stats.plan.name} Plan</p>
               <p className="text-xs text-muted/60">
-                {stats.usage.fastModelRequests} of {stats.limits.fastModelRequests} messages used {periodLabel}
+                Fast: {stats.usage.fastModelRequests} of {stats.limits.fastModelRequests} used {periodLabel}
               </p>
-              {isPro && stats.limits.premiumModelRequests > 0 && (
+              {stats.limits.premiumModelRequests > 0 && (
                 <p className="text-xs text-muted/60">
-                  Premium: {stats.usage.premiumModelRequests} / {stats.limits.premiumModelRequests}
+                  Premium: {stats.usage.premiumModelRequests} of {stats.limits.premiumModelRequests} used {periodLabel}
                 </p>
               )}
               <p className="text-xs text-muted/60 flex items-center gap-1">

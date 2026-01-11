@@ -16,7 +16,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { PROVIDERS } from "@/lib/providers";
+import { PROVIDERS, PREMIUM_MODELS } from "@/lib/providers";
 import useUserPreferences from "@/hooks/useUserPreferences";
 import { useSession } from "@/hooks/useSession";
 import { useModal } from "@/hooks/use-modal";
@@ -68,6 +68,11 @@ export function ModelSwitcher({
   // Check if a model is in the free tier
   const isFreeModel = (modelId: string) => {
     return freeTierModels.includes(modelId);
+  };
+
+  // Check if a model is premium (in PREMIUM_MODELS array)
+  const isPremiumModel = (modelId: string) => {
+    return PREMIUM_MODELS.includes(modelId);
   };
 
   const renderEmptyState = () => {
@@ -196,6 +201,14 @@ export function ModelSwitcher({
                                 className="text-[10px] px-1.5 py-0 h-4 font-normal bg-blue-400"
                               >
                                 Free
+                              </Badge>
+                            )}
+                            {isPremiumModel(model.id) && (
+                              <Badge
+                                variant="default"
+                                className="text-[10px] px-1.5 py-0 h-4 font-normal bg-gradient-to-r from-amber-500 to-orange-500"
+                              >
+                                Premium
                               </Badge>
                             )}
                           </CommandItem>
