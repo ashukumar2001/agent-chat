@@ -3,13 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Mail,
-  User,
-  LogOut,
-  Zap,
-  Sparkles,
-} from "lucide-react";
+import { Mail, User, LogOut, Zap, Sparkles } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useNavigate } from "@tanstack/react-router";
 import { useModal } from "@/hooks/use-modal";
@@ -20,6 +14,7 @@ import {
 } from "@/hooks/use-usage";
 import { useSubscription } from "@/hooks/use-subscription";
 import { cn } from "@/lib/utils";
+import { UpgradeButton } from "@/components/pricing";
 
 export const ProfilePage = () => {
   const { user, isPending } = useSession();
@@ -31,11 +26,6 @@ export const ProfilePage = () => {
   const handleSignOut = async () => {
     await authClient.signOut();
     navigate({ to: "/" });
-  };
-
-  const handleUpgrade = () => {
-    closeModal();
-    openModal("pricing");
   };
 
   const getUserInitials = (name: string) => {
@@ -199,7 +189,9 @@ export const ProfilePage = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Sparkles className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">Premium Requests</span>
+                        <span className="text-sm font-medium">
+                          Premium Requests
+                        </span>
                       </div>
                       <span className="text-sm font-semibold tabular-nums">
                         {stats.usage.premiumModelRequests.toLocaleString()} /{" "}
@@ -229,18 +221,9 @@ export const ProfilePage = () => {
                 )}
 
               {/* Upgrade Button */}
-              {!subscription && stats.plan.id !== "pro" && (
-                <div className="pt-2">
-                  <Button
-                    onClick={handleUpgrade}
-                    className="w-full sm:w-auto bg-linear-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary"
-                    variant="default"
-                  >
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Upgrade to Pro
-                  </Button>
-                </div>
-              )}
+              <div className="pt-2">
+                <UpgradeButton className="w-full sm:w-auto bg-linear-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary" />
+              </div>
             </div>
           </div>
         )}
