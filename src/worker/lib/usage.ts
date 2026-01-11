@@ -1,6 +1,6 @@
 /**
  * Usage tracking service
- * 
+ *
  * Handles tracking and checking usage limits for users
  */
 
@@ -75,7 +75,8 @@ export const getUserPlan = async (userId: string): Promise<PlanConfig> => {
 
   const sub = userSubscription[0];
   const isActive = sub.status === "active";
-  const isExpired = sub.nextBillingDate && new Date(sub.nextBillingDate) < new Date();
+  const isExpired =
+    sub.nextBillingDate && new Date(sub.nextBillingDate) < new Date();
 
   if (!isActive || isExpired) {
     return PLANS.free;
@@ -181,7 +182,8 @@ export const checkUsageLimit = async (
   if (isPremium) {
     // Check premium model limit
     if (usageRecord.premiumModelRequests >= plan.limits.premiumModelRequests) {
-      const periodLabel = plan.limits.periodType === "day" ? "today" : "this month";
+      const periodLabel =
+        plan.limits.periodType === "day" ? "today" : "this month";
       return {
         allowed: false,
         reason: `You've reached your premium model limit of ${plan.limits.premiumModelRequests} requests ${periodLabel}. Upgrade to Pro for more premium model access, or use your own API keys for unlimited usage.`,
@@ -192,7 +194,8 @@ export const checkUsageLimit = async (
   } else {
     // Check fast model limit
     if (usageRecord.fastModelRequests >= plan.limits.fastModelRequests) {
-      const periodLabel = plan.limits.periodType === "day" ? "today" : "this month";
+      const periodLabel =
+        plan.limits.periodType === "day" ? "today" : "this month";
       return {
         allowed: false,
         reason: `You've reached your message limit of ${plan.limits.fastModelRequests} requests ${periodLabel}. Upgrade to Pro for more messages, or use your own API keys for unlimited usage.`,
@@ -260,4 +263,3 @@ export const getUsageStats = async (userId: string): Promise<UsageStats> => {
     planName: plan.name,
   };
 };
-
