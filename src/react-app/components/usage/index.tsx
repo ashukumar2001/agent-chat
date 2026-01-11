@@ -58,7 +58,9 @@ const UsageBar = memo(function UsageBar({
               </span>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{remaining.toLocaleString()} remaining {periodLabel}</p>
+              <p>
+                {remaining.toLocaleString()} remaining {periodLabel}
+              </p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -147,25 +149,31 @@ export const UsageCard = memo(function UsageCard({
                   : "bg-muted hover:bg-muted/80"
               )}
             >
-              <div className={cn(
-                "flex items-center gap-1",
-                isFastNearLimit && "text-destructive"
-              )}>
+              <div
+                className={cn(
+                  "flex items-center gap-1",
+                  isFastNearLimit && "text-destructive"
+                )}
+              >
                 <Zap className="h-3 w-3" />
                 <span>
-                  {stats.usage.fastModelRequests}/{stats.limits.fastModelRequests}
+                  {stats.usage.fastModelRequests}/
+                  {stats.limits.fastModelRequests}
                 </span>
               </div>
               {stats.limits.premiumModelRequests > 0 && (
                 <>
                   <span className="text-muted-foreground">|</span>
-                  <div className={cn(
-                    "flex items-center gap-1",
-                    isPremiumNearLimit && "text-destructive"
-                  )}>
+                  <div
+                    className={cn(
+                      "flex items-center gap-1",
+                      isPremiumNearLimit && "text-destructive"
+                    )}
+                  >
                     <Sparkles className="h-3 w-3" />
                     <span>
-                      {stats.usage.premiumModelRequests}/{stats.limits.premiumModelRequests}
+                      {stats.usage.premiumModelRequests}/
+                      {stats.limits.premiumModelRequests}
                     </span>
                   </div>
                 </>
@@ -176,11 +184,13 @@ export const UsageCard = memo(function UsageCard({
             <div className="space-y-1">
               <p className="font-medium">{stats.plan.name} Plan</p>
               <p className="text-xs text-muted/60">
-                Fast: {stats.usage.fastModelRequests} of {stats.limits.fastModelRequests} used {periodLabel}
+                Fast: {stats.usage.fastModelRequests} of{" "}
+                {stats.limits.fastModelRequests} used {periodLabel}
               </p>
               {stats.limits.premiumModelRequests > 0 && (
                 <p className="text-xs text-muted/60">
-                  Premium: {stats.usage.premiumModelRequests} of {stats.limits.premiumModelRequests} used {periodLabel}
+                  Premium: {stats.usage.premiumModelRequests} of{" "}
+                  {stats.limits.premiumModelRequests} used {periodLabel}
                 </p>
               )}
               <p className="text-xs text-muted/60 flex items-center gap-1">
@@ -261,4 +271,3 @@ export const UsageIndicator = memo(function UsageIndicator() {
 });
 
 export default UsageCard;
-
