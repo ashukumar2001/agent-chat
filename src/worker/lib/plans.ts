@@ -28,49 +28,27 @@ export interface PlanConfig {
  * All other models count against fast quota
  */
 export const PREMIUM_MODELS = [
-  // OpenAI
-  "gpt-4o",
-  "gpt-4o-2024-11-20",
-  "gpt-4-turbo",
-  "gpt-4",
-  "o1",
-  "o1-mini",
-  "o1-preview",
-  "o3-mini",
-  // Anthropic
-  "claude-sonnet-4-20250514",
-  "claude-3-5-sonnet-20241022",
-  "claude-3-5-sonnet-latest",
-  "claude-3-opus-20240229",
-  "claude-3-opus-latest",
-  // Google
-  "gemini-2.0-pro-exp",
-  "gemini-1.5-pro",
-  "gemini-1.5-pro-latest",
-  "gemini-2.5-pro-preview-05-06",
-  // xAI
-  "grok-2",
-  "grok-2-latest",
-  "grok-3",
-  // Perplexity
-  "sonar-pro",
-  "sonar-reasoning-pro",
+  "claude-opus-4-5-20251101",
+  "claude-opus-4-1-20250805",
+  "claude-sonnet-4-5-20250929",
+  "gpt-5.2",
+  "gpt-5",
+  "gpt-5.2-pro",
+  "gpt-4.1",
+  "o3",
+  "o4-mini",
+  "gemini-2.5-pro",
+  "gemini-3-pro-preview",
 ];
 
 /**
  * Free tier allowed models - only these models can be used on free tier
  */
 export const FREE_TIER_MODELS = [
-  // DeepSeek
-  "deepseek-chat",
-  "deepseek-reasoner",
-  // Gemini Flash
+  "gemini-2.5-flash-lite",
   "gemini-2.0-flash",
-  "gemini-2.0-flash-lite",
-  "gemini-1.5-flash",
-  "gemini-1.5-flash-latest",
-  "gemini-2.5-flash-preview-05-20",
-  "gpt-4.1-nano",
+  "gpt-5-nano",
+  "gpt-4o-mini",
 ];
 
 export const PLANS: Record<PlanId, PlanConfig> = {
@@ -78,7 +56,7 @@ export const PLANS: Record<PlanId, PlanConfig> = {
     id: "free",
     name: "Free",
     limits: {
-      fastModelRequests: 5, // 5 messages per day
+      fastModelRequests: 10,
       premiumModelRequests: 0, // No premium models
       periodType: "day",
       allowedModels: FREE_TIER_MODELS,
