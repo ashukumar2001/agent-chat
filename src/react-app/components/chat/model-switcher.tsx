@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ChevronsUpDown, LogIn, Key } from "lucide-react";
+import { ChevronsUpDown, LogIn, Key, Lock, Gem } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +21,11 @@ import useUserPreferences from "@/hooks/useUserPreferences";
 import { useSession } from "@/hooks/useSession";
 import { useModal } from "@/hooks/use-modal";
 import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type ModelSwitcherProps = {
   selectedModel: string;
@@ -32,8 +37,13 @@ export function ModelSwitcher({
   handleModelChange,
 }: ModelSwitcherProps) {
   const [open, setOpen] = React.useState(false);
-  const { isLoadingUserPreferences, models, userApiKeysStatus, planInfo } =
-    useUserPreferences();
+  const {
+    isLoadingUserPreferences,
+    models,
+    userApiKeysStatus,
+    planInfo,
+    isModelAllowed,
+  } = useUserPreferences();
   const { user, isPending: isSessionPending } = useSession();
   const { openModal } = useModal();
   const currentModel = models.find((model) => model.id === selectedModel);
@@ -147,7 +157,7 @@ export function ModelSwitcher({
         <Command>
           <CommandInput placeholder="Search models..." />
           <CommandList>
-            {!hasModels || !isLoggedIn ? (
+            {!hasModels ? (
               renderEmptyState()
             ) : (
               <>
@@ -179,40 +189,83 @@ export function ModelSwitcher({
                           </div>
                         }
                       >
-                        {providerModels.map((model) => (
-                          <CommandItem
-                            key={model.id}
-                            value={model.id}
-                            onSelect={(currentValue) => {
-                              handleModelChange(currentValue);
-                              setOpen(false);
-                            }}
-                            className={cn("justify-between items-center")}
-                          >
-                            <div className="flex items-center gap-3">
-                              {provider?.icon && (
-                                <provider.icon className="w-4 h-4" />
+                        {providerModels.map((model) => {
+                          const allowed = isModelAllowed(model.id);
+                          const commandItem = (
+                            <CommandItem
+                              key={model.id}
+                              value={model.id}
+                              onSelect={(currentValue) => {
+                                if (!isLoggedIn) {
+                                  openModal("login");
+                                  setOpen(false);
+                                  return;
+                                }
+                                if (!allowed) {
+                                  return;
+                                }
+                                handleModelChange(currentValue);
+                                setOpen(false);
+                              }}
+                              className={cn(
+                                "justify-between items-center",
+                                !allowed &&
+                                  "opacity-50 cursor-not-allowed pointer-events-none"
                               )}
-                              {model.name}
-                            </div>
-                            {isFreeModel(model.id) && (
-                              <Badge
-                                variant="default"
-                                className="text-[10px] px-1.5 py-0 h-4 font-normal bg-blue-400"
-                              >
-                                Free
-                              </Badge>
-                            )}
-                            {isPremiumModel(model.id) && (
-                              <Badge
-                                variant="default"
-                                className="text-[10px] px-1.5 py-0 h-4 font-normal bg-gradient-to-r from-amber-500 to-orange-500"
-                              >
-                                Premium
-                              </Badge>
-                            )}
-                          </CommandItem>
-                        ))}
+                            >
+                              <div className="flex items-center gap-3">
+                                {provider?.icon && (
+                                  <provider.icon className="w-4 h-4" />
+                                )}
+                                <div className="flex flex-col">
+                                  <div className="flex items-center gap-2">
+                                    <span>{model.name}</span>
+                                    {!allowed && (
+                                      <Lock className="w-3 h-3 text-muted-foreground" />
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {isFreeModel(model.id) && (
+                                  <Badge
+                                    variant="default"
+                                    className="text-[10px] px-1.5 py-0 h-4 font-normal bg-blue-400"
+                                  >
+                                    Free
+                                  </Badge>
+                                )}
+                                {isPremiumModel(model.id) && (
+                                  <Tooltip>
+                                    <TooltipTrigger>
+                                      <Gem className="w-3.5 h-3.5 text-amber-500 fill-amber-500/20" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      Premium model
+                                    </TooltipContent>
+                                  </Tooltip>
+                                )}
+                              </div>
+                            </CommandItem>
+                          );
+
+                          if (!allowed) {
+                            return (
+                              <Tooltip key={model.id}>
+                                <TooltipTrigger asChild>
+                                  <div className="pointer-events-auto">
+                                    {commandItem}
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  Subscription Required
+                                </TooltipContent>
+                              </Tooltip>
+                            );
+                          }
+
+                          return commandItem;
+                        })}
                       </CommandGroup>
                     );
                   }

@@ -20,36 +20,43 @@ const useUserPreferences = () => {
     [userApiKeysStatusData, user]
   );
 
-  const models = useMemo(() => {
-    if (!user) return [];
+  const isModelAllowed = (modelId: string) => {
+    if (!user) return false;
+
+    const model = MODELS.find((m) => m.id === modelId);
+    if (!model) return false;
+
+    // If user has their own API key for this provider, show all models from that provider
+    if (userApiKeysStatus?.[model.providerId]) {
+      return true;
+    }
 
     const allowedModels = planInfo?.plan?.limits?.allowedModels;
     const hasUnlimitedAccess = allowedModels === null; // Pro plan - all models allowed
 
-    return MODELS.filter((model) => {
-      // If user has their own API key for this provider, show all models from that provider
-      if (userApiKeysStatus?.[model.providerId]) {
-        return true;
-      }
+    // If user has unlimited access (pro plan), show all models
+    if (hasUnlimitedAccess) {
+      return true;
+    }
 
-      // If user has unlimited access (pro plan), show all models
-      if (hasUnlimitedAccess) {
-        return true;
-      }
+    // For free tier users without their own API key, only show allowed models
+    if (allowedModels && allowedModels.includes(model.id)) {
+      return true;
+    }
 
-      // For free tier users without their own API key, only show allowed models
-      if (allowedModels && allowedModels.includes(model.id)) {
-        return true;
-      }
+    return false;
+  };
 
-      return false;
-    });
-  }, [userApiKeysStatus, planInfo, user]);
+  const models = useMemo(() => {
+    return MODELS;
+  }, []);
 
   return {
     userApiKeysStatus: userApiKeysStatus || {},
     isLoadingUserPreferences: isLoadingUserApiKeysStatus || isLoadingPlanInfo,
     models,
+    allModels: MODELS,
+    isModelAllowed,
     planInfo,
   };
 };

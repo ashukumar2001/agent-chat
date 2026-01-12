@@ -4,6 +4,7 @@ import { ModalProvider } from "@/components/modals";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { Outlet, createRootRoute } from "@tanstack/react-router";
 import { NuqsAdapter } from "nuqs/adapters/tanstack-router";
 
@@ -17,17 +18,19 @@ function RootComponent() {
       <ThemeProvider defaultTheme="system" storageKey="eddy-ui-theme">
         <Toaster />
         <ModalProvider />
-        <SidebarProvider>
-          <AppSidebar />
-          <SidebarInset>
-            <AppSidebarTrigger />
-            <div className="bg-background @container/mainview flex h-full w-full">
-              <main className="@container h-[calc(100dvh-48px)] grow shrink-0">
-                <Outlet />
-              </main>
-            </div>
-          </SidebarInset>
-        </SidebarProvider>
+        <TooltipProvider>
+          <SidebarProvider>
+            <AppSidebar />
+            <SidebarInset>
+              <AppSidebarTrigger />
+              <div className="bg-background @container/mainview flex h-full w-full">
+                <main className="@container h-[calc(100dvh-48px)] grow shrink-0">
+                  <Outlet />
+                </main>
+              </div>
+            </SidebarInset>
+          </SidebarProvider>
+        </TooltipProvider>
       </ThemeProvider>
     </NuqsAdapter>
   );
