@@ -1,6 +1,9 @@
 import z from "zod";
+import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "../trpc";
 import { encryptString } from "../lib/crypto";
+import { getUserPlan } from "../lib/usage";
+
 const SUGGESTED_PROVIDERS_IDS = [
   "openai",
   "mistral",
@@ -37,6 +40,16 @@ export const userSettings = router({
     )
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session?.user.id;
+
+      // Check if user has Pro plan
+      const plan = await getUserPlan(userId);
+      if (plan.id !== "pro") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "BYOK (Bring Your Own Key) is a Pro feature. Please upgrade to Pro to use your own API keys.",
+        });
+      }
+
       const doId = ctx.workerContext.env.UserSettings.idFromName(userId);
       const stub = ctx.workerContext.env.UserSettings.get(doId);
       const keyString = ctx.workerContext.env.DATA_ENCRYPTION_KEY;
@@ -55,6 +68,16 @@ export const userSettings = router({
     )
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session?.user.id;
+
+      // Check if user has Pro plan
+      const plan = await getUserPlan(userId);
+      if (plan.id !== "pro") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "BYOK (Bring Your Own Key) is a Pro feature. Please upgrade to Pro to manage your own API keys.",
+        });
+      }
+
       const doId = ctx.workerContext.env.UserSettings.idFromName(userId);
       const stub = ctx.workerContext.env.UserSettings.get(doId);
       await stub.removeUserApiKey(input.provider);
