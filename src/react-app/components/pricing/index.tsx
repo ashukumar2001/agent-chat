@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useState } from "react";
 import { DodoPayments } from "dodopayments-checkout";
-import { Check, Sparkles, Zap, ExternalLink } from "lucide-react";
+import { Check, Sparkles, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,

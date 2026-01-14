@@ -19,7 +19,7 @@ import { UpgradeButton } from "@/components/pricing";
 export const ProfilePage = () => {
   const { user, isPending } = useSession();
   const { stats, isLoading: isLoadingUsage } = useUsageStats();
-  const { subscription, isLoading: isLoadingSubscription } = useSubscription();
+  const { isLoading: isLoadingSubscription } = useSubscription();
   const navigate = useNavigate();
   const { openModal, closeModal } = useModal();
 

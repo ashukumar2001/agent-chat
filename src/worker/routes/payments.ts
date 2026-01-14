@@ -2,8 +2,7 @@ import { Hono } from "hono";
 import { Webhooks } from "@dodopayments/hono";
 import { db } from "../db/db";
 import { customers, subscriptions, payments, usage } from "../db/schema";
-import { eq, and, gte, lte, desc } from "drizzle-orm";
-import { auth } from "../lib/auth";
+import { eq, and, gte, lte } from "drizzle-orm";
 import { getDodoConfig } from "../lib/dodo-payments";
 import { getPeriodBoundaries, getPlanByProductId } from "../lib/plans";
 import { nanoid } from "nanoid";
@@ -244,64 +243,4 @@ paymentsApp.post(
   })
 );
 
-// Get current user's subscription status
-paymentsApp.get("/subscription", async (c) => {
-  const session = await auth.api.getSession({ headers: c.req.raw.headers });
-
-  if (!session) {
-    return c.json({ error: "Unauthorized" }, 401);
-  }
-
-  // Get the most recent subscription, prioritizing active ones
-  const userSubscription = await db
-    .select()
-    .from(subscriptions)
-    .where(eq(subscriptions.userId, session.user.id))
-    .orderBy(desc(subscriptions.createdAt))
-    .limit(1);
-
-  if (!userSubscription.length) {
-    return c.json({
-      hasSubscription: false,
-      subscription: null,
-    });
-  }
-
-  const sub = userSubscription[0];
-  const isActive = sub.status === "active";
-  const isExpired =
-    sub.nextBillingDate && new Date(sub.nextBillingDate) < new Date();
-
-  return c.json({
-    hasSubscription: isActive && !isExpired,
-    subscription: {
-      id: sub.id,
-      status: sub.status,
-      productId: sub.productId,
-      previousBillingDate: sub.previousBillingDate,
-      nextBillingDate: sub.nextBillingDate,
-      cancelledAt: sub.cancelledAt,
-    },
-  });
-});
-// Get user's customer ID for portal access
-paymentsApp.get("/customer", async (c) => {
-  const session = await auth.api.getSession({ headers: c.req.raw.headers });
-
-  if (!session) {
-    return c.json({ error: "Unauthorized" }, 401);
-  }
-
-  const userCustomer = await db
-    .select()
-    .from(customers)
-    .where(eq(customers.userId, session.user.id))
-    .limit(1);
-
-  if (!userCustomer.length) {
-    return c.json({ customerId: null });
-  }
-
-  return c.json({ customerId: userCustomer[0].id });
-});
 export default paymentsApp;
