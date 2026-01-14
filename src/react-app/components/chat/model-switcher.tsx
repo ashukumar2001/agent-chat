@@ -16,7 +16,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { PROVIDERS, PREMIUM_MODELS } from "@/lib/providers";
+import { PROVIDERS } from "@/lib/providers";
+import { PREMIUM_MODELS } from "@worker/lib/models-by-plan";
 import useUserPreferences from "@/hooks/useUserPreferences";
 import { useSession } from "@/hooks/useSession";
 import { useModal } from "@/hooks/use-modal";
@@ -209,8 +210,7 @@ export function ModelSwitcher({
                               }}
                               className={cn(
                                 "justify-between items-center",
-                                !allowed &&
-                                  "opacity-50 cursor-not-allowed pointer-events-none"
+                                !allowed && "opacity-50 cursor-not-allowed"
                               )}
                             >
                               <div className="flex items-center gap-3">
@@ -221,7 +221,14 @@ export function ModelSwitcher({
                                   <div className="flex items-center gap-2">
                                     <span>{model.name}</span>
                                     {!allowed && (
-                                      <Lock className="w-3 h-3 text-muted-foreground" />
+                                      <Tooltip key={model.id}>
+                                        <TooltipTrigger>
+                                          <Lock className="w-3 h-3 text-muted-foreground" />
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          Subscription Required
+                                        </TooltipContent>
+                                      </Tooltip>
                                     )}
                                   </div>
                                 </div>
@@ -248,22 +255,6 @@ export function ModelSwitcher({
                               </div>
                             </CommandItem>
                           );
-
-                          if (!allowed) {
-                            return (
-                              <Tooltip key={model.id}>
-                                <TooltipTrigger asChild>
-                                  <div className="pointer-events-auto">
-                                    {commandItem}
-                                  </div>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  Subscription Required
-                                </TooltipContent>
-                              </Tooltip>
-                            );
-                          }
-
                           return commandItem;
                         })}
                       </CommandGroup>

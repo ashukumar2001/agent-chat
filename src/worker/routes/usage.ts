@@ -1,7 +1,8 @@
 import { Hono } from "hono";
 import { auth } from "../lib/auth";
 import { getUsageStats, getUserPlan, checkUsageLimit } from "../lib/usage";
-import { PLANS, FREE_TIER_MODELS, PREMIUM_MODELS } from "../lib/plans";
+import { PLANS } from "../lib/plans";
+import { FREE_TIER_MODELS, PREMIUM_MODELS } from "../lib/models-by-plan";
 
 const usageApp = new Hono<{ Bindings: Env }>();
 
@@ -102,4 +103,3 @@ usageApp.get("/check/:modelId", async (c) => {
 });
 
 export default usageApp;
-
