@@ -25,7 +25,7 @@ import { toast } from "sonner";
 import { useSession } from "@/hooks/useSession";
 import { authClient } from "@/lib/auth-client";
 
-// Product IDs from Dodo Payments dashboard
+// Product IDs
 // Replace these with your actual product IDs
 const PRODUCTS = {
   free: {
@@ -35,36 +35,28 @@ const PRODUCTS = {
     priceLabel: "$0",
     period: "forever",
     description: "Try AI chat at no cost",
-    features: [
-      "5 messages per day",
-      "DeepSeek & Gemini Flash only",
-      "24-hour message history",
-      "Basic web search",
-    ],
+    features: ["10 messages per day", "Access to fast models"],
     icon: Zap,
     highlight: false,
   },
   pro: {
     // Use test product ID for development, live for production
-    id: import.meta.env.VITE_DODO_PRO_PRODUCT_ID || "pdt_0NVZisCmPSb7gDRkzIgKE",
+    id: import.meta.env.VITE_DODO_PRO_PRODUCT_ID,
     name: "Pro",
     price: 3,
     priceLabel: "$3",
     period: "month",
     description: "Great value for daily use",
     features: [
-      `1200 fast model messages/month`,
+      `1000 fast model messages/month`,
       "50 premium model messages/month",
-      "GPT-4o, Claude Sonnet, Gemini Pro",
-      "30-day message history",
-      "Web search & file uploads",
-      "Unlimited with your own API keys",
+      "Bring your own API keys",
+      "Web search capabilities",
     ],
     icon: Sparkles,
     highlight: true,
   },
 } as const;
-
 type ProductKey = keyof typeof PRODUCTS;
 
 interface PricingCardProps {
@@ -220,7 +212,7 @@ export const PricingModal = memo(function PricingModal() {
       setIsLoading(true);
 
       try {
-        const { data, error } = await authClient.dodopayments.checkoutSession({
+        await authClient.dodopayments.checkoutSession({
           product_cart: [
             {
               product_id: productId,
@@ -230,12 +222,7 @@ export const PricingModal = memo(function PricingModal() {
           metadata: {
             userId: user.id,
           },
-          billing_currency: "INR",
-          billing_address: {
-            country: "IN",
-          },
         });
-        console.log(data);
       } catch (error) {
         console.error("Checkout error:", error);
         toast.error("Checkout failed", {
@@ -251,6 +238,10 @@ export const PricingModal = memo(function PricingModal() {
     if (customerId) {
       const { data: customerPortal, error } =
         await authClient.dodopayments.customer.portal();
+      if (error) {
+        toast.error("Failed to open customer portal");
+        return;
+      }
       if (customerPortal && customerPortal.redirect) {
         window.location.href = customerPortal.url;
       }

@@ -47,8 +47,7 @@ export const PLANS: Record<PlanId, PlanConfig> = {
       historyRetentionDays: 30, // 30-day history
     },
     // This should match the product ID from Dodo Payments
-    productId:
-      process.env.VITE_DODO_PRO_PRODUCT_ID || "pdt_0NVZisCmPSb7gDRkzIgKE",
+    productId: env.DODO_PRO_PRODUCT_ID,
   },
 };
 

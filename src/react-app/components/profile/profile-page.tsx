@@ -39,7 +39,7 @@ export const ProfilePage = () => {
 
   if (isPending || isLoadingUsage || isLoadingSubscription) {
     return (
-      <div className="container mx-auto max-w-2xl px-6 py-8">
+      <div className="container mx-auto max-w-2xl py-4">
         <div className="space-y-8">
           <div className="flex items-center gap-4 pb-6 border-b">
             <Skeleton className="h-16 w-16 rounded-full shrink-0" />
@@ -86,7 +86,7 @@ export const ProfilePage = () => {
   }
 
   return (
-    <div className="container mx-auto max-w-2xl px-6 py-8">
+    <div className="container mx-auto max-w-2xl py-4">
       <div className="space-y-8">
         {/* Profile Header */}
         <div className="flex items-start justify-between gap-6 pb-8 border-b">
