@@ -46,7 +46,8 @@ export const userSettings = router({
       if (plan.id !== "pro") {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "BYOK (Bring Your Own Key) is a Pro feature. Please upgrade to Pro to use your own API keys.",
+          message:
+            "BYOK (Bring Your Own Key) is a Pro feature. Please upgrade to Pro to use your own API keys.",
         });
       }
 
@@ -74,7 +75,8 @@ export const userSettings = router({
       if (plan.id !== "pro") {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "BYOK (Bring Your Own Key) is a Pro feature. Please upgrade to Pro to manage your own API keys.",
+          message:
+            "BYOK (Bring Your Own Key) is a Pro feature. Please upgrade to Pro to manage your own API keys.",
         });
       }
 

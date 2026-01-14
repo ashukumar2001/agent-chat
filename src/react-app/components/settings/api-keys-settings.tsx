@@ -118,7 +118,8 @@ export const ApiKeysSettings: React.FC = () => {
           <h4 className="text-lg font-semibold mb-2">Pro Feature</h4>
           <p className="text-sm text-muted-foreground text-center max-w-md mb-4">
             BYOK (Bring Your Own Key) is available exclusively for Pro users.
-            Upgrade to Pro to use your own API keys for unlimited usage with any provider.
+            Upgrade to Pro to use your own API keys for unlimited usage with any
+            provider.
           </p>
           <Button
             onClick={() => openModal("pricing")}
