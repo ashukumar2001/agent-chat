@@ -157,7 +157,7 @@ const PricingCard = memo(function PricingCard({
 export const PricingModal = memo(function PricingModal() {
   const { user } = useSession();
   const { subscription, hasSubscription, refetch } = useSubscription();
-  const { customerId } = useCustomer();
+  // const { customerId } = useCustomer();
   const { isPricingOpen, closeModal } = useModal();
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -172,7 +172,6 @@ export const PricingModal = memo(function PricingModal() {
             : "test",
         displayType: "overlay",
         onEvent: (event) => {
-          console.log("Checkout event:", event);
           const eventType = (event as { type?: string }).type;
 
           if (eventType === "checkout.closed") {
@@ -234,20 +233,6 @@ export const PricingModal = memo(function PricingModal() {
     [user]
   );
 
-  const handleManageSubscription = useCallback(async () => {
-    if (customerId) {
-      const { data: customerPortal, error } =
-        await authClient.dodopayments.customer.portal();
-      if (error) {
-        toast.error("Failed to open customer portal");
-        return;
-      }
-      if (customerPortal && customerPortal.redirect) {
-        window.location.href = customerPortal.url;
-      }
-    }
-  }, [customerId]);
-
   const currentPlanId = hasSubscription ? subscription?.productId : "free";
 
   const handleOpenChange = useCallback(
@@ -282,23 +267,6 @@ export const PricingModal = memo(function PricingModal() {
             />
           ))}
         </div>
-
-        {hasSubscription && customerId && (
-          <div className="px-6 pb-6 text-center border-t pt-6">
-            <Button
-              variant="ghost"
-              onClick={handleManageSubscription}
-              className="text-sm text-muted-foreground hover:text-foreground"
-            >
-              <ExternalLink className="mr-2 h-4 w-4" />
-              Manage Subscription
-            </Button>
-          </div>
-        )}
-
-        <p className="text-center text-xs text-muted-foreground px-6 pb-6">
-          All plans include a 14-day money-back guarantee. Cancel anytime.
-        </p>
       </DialogContent>
     </Dialog>
   );
@@ -316,7 +284,12 @@ export const UpgradeButton = memo(function UpgradeButton({
 }: UpgradeButtonProps) {
   const { openModal } = useModal();
   const { hasSubscription } = useSubscription();
-
+  const { customerId } = useCustomer();
+  const handleManageSubscription = useCallback(async () => {
+    if (customerId) {
+      await authClient.dodopayments.customer.portal();
+    }
+  }, [customerId]);
   const handleClick = useCallback(() => {
     openModal("pricing");
   }, [openModal]);
@@ -325,7 +298,7 @@ export const UpgradeButton = memo(function UpgradeButton({
     <Button
       variant={variant}
       className={cn("gap-2", className)}
-      onClick={handleClick}
+      onClick={hasSubscription ? handleManageSubscription : handleClick}
     >
       {hasSubscription ? (
         "Manage Plan"

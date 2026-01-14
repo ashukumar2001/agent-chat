@@ -19,7 +19,6 @@ paymentsApp.post(
     // Handle successful payment
     onPaymentSucceeded: async (payload) => {
       console.log("Payment succeeded:", payload.data.payment_id);
-      console.log(JSON.stringify(payload.data));
 
       const paymentData = payload.data;
 

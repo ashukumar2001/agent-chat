@@ -33,11 +33,11 @@ export const auth = betterAuth({
         checkout({
           products: [
             {
-              productId: "pdt_0NVZisCmPSb7gDRkzIgKE",
+              productId: process.env.DODO_PRO_PRODUCT_ID,
               slug: "pro-plan",
             },
           ],
-          successUrl: "/dashboard/success",
+          successUrl: "/",
           authenticatedUsersOnly: true,
         }),
         portal(),
