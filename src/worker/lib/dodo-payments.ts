@@ -13,7 +13,8 @@ export const getDodoClient = () => {
 
   return new DodoPayments({
     bearerToken,
-    environment: env.CLOUDFLARE_ENV === "prod" ? "live_mode" : "test_mode",
+    environment:
+      env.CLOUDFLARE_ENV === "production" ? "live_mode" : "test_mode",
   });
 };
 
@@ -24,7 +25,7 @@ export const getDodoConfig = () => ({
   bearerToken: env.DODO_PAYMENTS_API_KEY!,
   webhookKey: env.DODO_PAYMENTS_WEBHOOK_KEY!,
   environment:
-    process.env.CLOUDFLARE_ENV === "prod"
+    process.env.CLOUDFLARE_ENV === "production"
       ? ("live_mode" as const)
       : ("test_mode" as const),
 });
