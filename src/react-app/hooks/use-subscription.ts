@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { trpc } from "@/lib/trpc-client";
+import { authClient } from "@/lib/auth-client";
 
 export interface Subscription {
   id: string;
@@ -19,14 +20,18 @@ export interface SubscriptionState {
 }
 
 export const useSubscription = (): SubscriptionState => {
-  const { data, isLoading, error, refetch } = useQuery(
-    trpc.payments.subscription.queryOptions()
-  );
+  const { data: session } = authClient.useSession();
+  const isLoggedIn = !!session?.user;
+
+  const { data, isLoading, error, refetch } = useQuery({
+    ...trpc.payments.subscription.queryOptions(),
+    enabled: isLoggedIn, // Only fetch when user is logged in
+  });
 
   return {
     hasSubscription: data?.hasSubscription ?? false,
     subscription: data?.subscription ?? null,
-    isLoading,
+    isLoading: isLoggedIn ? isLoading : false,
     error: error?.message ?? null,
     refetch: async () => {
       await refetch();
@@ -42,7 +47,7 @@ export interface CustomerState {
 
 export const useCustomer = (): CustomerState => {
   const { data, isLoading, error } = useQuery(
-    trpc.payments.customer.queryOptions()
+    trpc.payments.customer.queryOptions(),
   );
 
   return {

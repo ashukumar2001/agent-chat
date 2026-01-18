@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { authClient } from "@/lib/auth-client";
 
 export interface UsageStats {
   usage: {
@@ -82,7 +83,9 @@ const fetchPlanInfo = async (): Promise<PlanInfo> => {
 };
 
 const checkModelUsage = async (modelId: string): Promise<UsageCheckResult> => {
-  const response = await fetch(`/api/usage/check/${encodeURIComponent(modelId)}`);
+  const response = await fetch(
+    `/api/usage/check/${encodeURIComponent(modelId)}`,
+  );
   if (!response.ok) {
     throw new Error("Failed to check model usage");
   }
@@ -108,15 +111,19 @@ export const useUsageStats = () => {
 };
 
 export const usePlanInfo = () => {
+  const { data: session } = authClient.useSession();
+  const isLoggedIn = !!session?.user;
+
   const { data, isLoading, error } = useQuery({
     queryKey: ["plan-info"],
     queryFn: fetchPlanInfo,
     staleTime: 5 * 60 * 1000, // Consider data stale after 5 minutes
+    enabled: isLoggedIn, // Only fetch when user is logged in
   });
 
   return {
     planInfo: data,
-    isLoading,
+    isLoading: isLoggedIn ? isLoading : false,
     error,
   };
 };
@@ -140,7 +147,10 @@ export const useModelUsageCheck = (modelId: string | null, enabled = true) => {
 /**
  * Calculate percentage of usage for a given metric
  */
-export const calculateUsagePercentage = (used: number, limit: number): number => {
+export const calculateUsagePercentage = (
+  used: number,
+  limit: number,
+): number => {
   if (limit === 0) return 0;
   return Math.min(Math.round((used / limit) * 100), 100);
 };
@@ -162,4 +172,3 @@ export const getProgressColorClass = (percentage: number): string => {
   if (percentage >= 75) return "bg-amber-500";
   return "bg-primary";
 };
-
