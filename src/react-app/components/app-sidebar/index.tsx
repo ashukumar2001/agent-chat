@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Chat } from "@/types/misc";
 import { useChatUtils } from "@/hooks/use-chat-utils";
+import { UsageIndicator } from "@/components/usage";
 
 // Types
 type GroupedChats = {
@@ -304,7 +305,12 @@ const SidebarFooterContent = memo(function SidebarFooterContent({
   }, [openModal]);
 
   return (
-    <SidebarFooter className="border-t border-sidebar-border/50 p-4 bg-linear-to-t from-sidebar-accent/10 to-transparent">
+    <SidebarFooter className="border-t border-sidebar-border/50 p-4 bg-linear-to-t from-sidebar-accent/10 to-transparent space-y-3">
+      {user && (
+        <div className="flex justify-center">
+          <UsageIndicator />
+        </div>
+      )}
       {user ? (
         <UserProfile user={user} onOpenSettings={handleOpenSettings} />
       ) : (

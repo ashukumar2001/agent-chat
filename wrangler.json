@@ -15,13 +15,10 @@
     "enabled": true
   },
   "upload_source_maps": true,
-  "assets": {
-    "not_found_handling": "single-page-application"
-  },
   "env": {
     "development": {
       "vars": {
-        "CLOUDFLARE_ENV": "dev"
+        "CLOUDFLARE_ENV": "development"
       },
       "durable_objects": {
         "bindings": [
@@ -55,7 +52,7 @@
     },
     "production": {
       "vars": {
-        "CLOUDFLARE_ENV": "prod"
+        "CLOUDFLARE_ENV": "production"
       },
       "durable_objects": {
         "bindings": [
