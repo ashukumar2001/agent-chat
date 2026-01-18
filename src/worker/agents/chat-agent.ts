@@ -40,7 +40,7 @@ export class ChatAgent extends AIChatAgent<Env> {
 
   async onChatMessage(
     onFinish: StreamTextOnFinishCallback<ToolSet>,
-    { abortSignal, metadata }: OnChatMessageOptions
+    { abortSignal, metadata }: OnChatMessageOptions,
   ) {
     const userId = (metadata?.userId as string) || "";
     const modelId = (metadata?.model as string) ?? DEFUALT_MODEL;
@@ -79,7 +79,7 @@ export class ChatAgent extends AIChatAgent<Env> {
         modelInstance = google("gemini-2.5-flash");
       } else {
         return this.createErrorResponse(
-          `No API key configured for provider ${modelConfig.provider}`
+          `No API key configured for provider ${modelConfig.provider}`,
         );
       }
     }
@@ -97,7 +97,7 @@ export class ChatAgent extends AIChatAgent<Env> {
               userId,
               modelId,
               finishResult.usage?.inputTokens ?? 0,
-              finishResult.usage?.outputTokens ?? 0
+              finishResult.usage?.outputTokens ?? 0,
             );
           } catch (error) {
             console.error("Failed to increment usage:", error);

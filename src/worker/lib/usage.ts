@@ -90,7 +90,7 @@ export const getUserPlan = async (userId: string): Promise<PlanConfig> => {
  */
 export const getOrCreateUsageRecord = async (
   userId: string,
-  plan: PlanConfig
+  plan: PlanConfig,
 ): Promise<UsageRecord> => {
   const { start, end } = getPeriodBoundaries(plan);
 
@@ -102,8 +102,8 @@ export const getOrCreateUsageRecord = async (
       and(
         eq(usage.userId, userId),
         gte(usage.periodStart, start),
-        lte(usage.periodEnd, end)
-      )
+        lte(usage.periodEnd, end),
+      ),
     )
     .limit(1);
 
@@ -146,7 +146,7 @@ export const getOrCreateUsageRecord = async (
 export const checkUsageLimit = async (
   userId: string,
   modelId: string,
-  hasOwnApiKey: boolean = false
+  hasOwnApiKey: boolean = false,
 ): Promise<UsageCheckResult> => {
   const plan = await getUserPlan(userId);
 
@@ -219,7 +219,7 @@ export const incrementUsage = async (
   userId: string,
   modelId: string,
   inputTokens: number = 0,
-  outputTokens: number = 0
+  outputTokens: number = 0,
 ): Promise<void> => {
   const plan = await getUserPlan(userId);
   const usageRecord = await getOrCreateUsageRecord(userId, plan);

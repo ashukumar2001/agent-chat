@@ -2,9 +2,10 @@ import dotenv from "dotenv";
 import { type Config } from "drizzle-kit";
 dotenv.config({
   path:
-    process.env.CLOUDFLARE_ENV === "prod" ? ".dev.vars.prod" : ".dev.vars.dev",
+    process.env.CLOUDFLARE_ENV === "production"
+      ? ".env.production"
+      : ".env.development",
 });
-console.log(process.env.CLOUDFLARE_ENV, process.env);
 const getDbConfiguration = () => {
   return {
     driver: "d1-http",

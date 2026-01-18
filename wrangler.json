@@ -22,7 +22,7 @@
   "env": {
     "development": {
       "vars": {
-        "CLOUDFLARE_ENV": "dev"
+        "CLOUDFLARE_ENV": "development"
       },
       "durable_objects": {
         "bindings": [
@@ -56,7 +56,7 @@
     },
     "production": {
       "vars": {
-        "CLOUDFLARE_ENV": "prod"
+        "CLOUDFLARE_ENV": "production"
       },
       "durable_objects": {
         "bindings": [
