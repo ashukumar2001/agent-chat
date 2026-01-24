@@ -9,7 +9,7 @@ import {
 import { tools } from "../lib/tools";
 import { DEFAULT_SYSTEM_PROMPT, DEFUALT_MODEL } from "../lib/config";
 import { MODELS } from "../lib/models";
-import { createGoogleGenerativeAI, google } from "@ai-sdk/google";
+import { google } from "@ai-sdk/google";
 import { getUserKey } from "../lib/user-keys";
 import { AIChatAgent, type OnChatMessageOptions } from "./ai-chat-agent";
 import { checkUsageLimit, incrementUsage } from "../lib/usage";
@@ -67,21 +67,20 @@ export class ChatAgent extends AIChatAgent<Env> {
       }
     }
 
-    // Use the dynamic model configuration instead of hardcoded model
-    if (modelConfig.apiSdk && apiKey) {
-      modelInstance = modelConfig.apiSdk(apiKey);
-    } else {
-      if (this.env.GEMINI_API_KEY) {
-        // Fallback to Google SDK if no API key is configured
-        const google = createGoogleGenerativeAI({
-          apiKey: this.env.GEMINI_API_KEY,
-        });
-        modelInstance = google("gemini-2.5-flash");
+    // Use the dynamic model configuration
+    if (modelConfig.apiSdk) {
+      if (apiKey) {
+        // User has their own API key configured
+        modelInstance = modelConfig.apiSdk(apiKey);
       } else {
-        return this.createErrorResponse(
-          `No API key configured for provider ${modelConfig.provider}`,
-        );
+        // Use platform API key - the apiSdk function will use environment variables
+        // when called without an apiKey argument
+        modelInstance = modelConfig.apiSdk();
       }
+    } else {
+      return this.createErrorResponse(
+        `No API SDK configured for model ${modelConfig.id}`,
+      );
     }
 
     // Use streamText directly and return with metadata

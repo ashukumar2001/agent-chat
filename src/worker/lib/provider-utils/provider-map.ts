@@ -45,6 +45,10 @@ const MODEL_PROVIDER_MAP: Record<string, Provider> = {
   "o3-2025-04-16": "openai",
   "o4-mini": "openai",
   "o4-mini-2025-04-16": "openai",
+  "gpt-5": "openai",
+  "gpt-5.2": "openai",
+  "gpt-5.2-pro": "openai",
+  "gpt-5-nano": "openai",
 
   // Mistral
   "ministral-3b-latest": "mistral",
@@ -87,6 +91,9 @@ const MODEL_PROVIDER_MAP: Record<string, Provider> = {
   "gemma-3-27b-it": "google",
   "learnlm-1.5-pro-experimental": "google",
   "gemini-3-flash-preview": "google",
+  "gemini-2.5-pro": "google",
+  "gemini-2.5-flash-lite": "google",
+  "gemini-3-pro-preview": "google",
 
   // Anthropic
   "claude-3-7-sonnet-20250219": "anthropic",
@@ -99,6 +106,9 @@ const MODEL_PROVIDER_MAP: Record<string, Provider> = {
   "claude-3-opus-20240229": "anthropic",
   "claude-3-sonnet-20240229": "anthropic",
   "claude-3-haiku-20240307": "anthropic",
+  "claude-opus-4-5-20251101": "anthropic",
+  "claude-opus-4-1-20250805": "anthropic",
+  "claude-sonnet-4-5-20250929": "anthropic",
 
   // XAI
   "grok-3": "xai",
