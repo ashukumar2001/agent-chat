@@ -9,7 +9,8 @@
   ],
   "assets": {
     "not_found_handling": "single-page-application",
-    "directory": "./dist/"
+    "directory": "./dist/",
+    "run_worker_first": ["/api/*", "/trpc/*", "/agents/*"]
   },
   "observability": {
     "enabled": true
