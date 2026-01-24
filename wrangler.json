@@ -1,7 +1,3 @@
-/**
- * For more details on how to configure Wrangler, refer to:
- * https://developers.cloudflare.com/workers/wrangler/configuration/
- */
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "eddy",
@@ -11,6 +7,9 @@
     "nodejs_compat",
     "nodejs_compat_populate_process_env"
   ],
+  "assets": {
+    "not_found_handling": "single-page-application"
+  },
   "observability": {
     "enabled": true
   },

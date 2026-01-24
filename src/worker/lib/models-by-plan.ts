@@ -3,7 +3,6 @@
  */
 export const FREE_TIER_MODELS = [
   "gemini-2.5-flash-lite",
-  "gemini-2.0-flash",
   "gpt-5-nano",
   "gpt-4o-mini",
 ];
