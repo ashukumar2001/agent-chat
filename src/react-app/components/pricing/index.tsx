@@ -81,7 +81,7 @@ const PricingCard = memo(function PricingCard({
         product.highlight
           ? "border-primary/20 bg-primary/5"
           : "border-border/50 bg-card",
-        "hover:border-primary/40"
+        "hover:border-primary/40",
       )}
     >
       {product.highlight && (
@@ -166,10 +166,7 @@ export const PricingModal = memo(function PricingModal() {
   useEffect(() => {
     if (!isInitialized) {
       DodoPayments.Initialize({
-        mode:
-          import.meta.env.VITE_DODO_MODE === "live" || import.meta.env.PROD
-            ? "live"
-            : "test",
+        mode: import.meta.env.VITE_DODO_MODE === "live" ? "live" : "test",
         displayType: "overlay",
         onEvent: (event) => {
           const eventType = (event as { type?: string }).type;
@@ -230,7 +227,7 @@ export const PricingModal = memo(function PricingModal() {
         setIsLoading(false);
       }
     },
-    [user]
+    [user],
   );
 
   const currentPlanId = hasSubscription ? subscription?.productId : "free";
@@ -241,7 +238,7 @@ export const PricingModal = memo(function PricingModal() {
         closeModal();
       }
     },
-    [closeModal]
+    [closeModal],
   );
 
   return (
@@ -329,7 +326,7 @@ export const SubscriptionBadge = memo(function SubscriptionBadge() {
   }
 
   const product = Object.values(PRODUCTS).find(
-    (p) => p.id === subscription?.productId
+    (p) => p.id === subscription?.productId,
   );
 
   return (

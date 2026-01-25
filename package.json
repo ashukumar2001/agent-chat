@@ -107,7 +107,7 @@
     "build:prod": "tsc -b && CLOUDFLARE_ENV=production vite build",
     "build": "tsc -b && CLOUDFLARE_ENV=development vite build",
     "cf-check-size": "tsc && vite build && wrangler deploy --dry-run",
-    "deploy:prod": "npm run build:prod && wrangler deploy",
+    "deploy:prod": "wrangler deploy --name eddy",
     "deploy": "wrangler deploy",
     "dev": "CLOUDFLARE_ENV=development vite",
     "lint": "eslint .",
