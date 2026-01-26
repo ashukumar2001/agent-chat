@@ -7,6 +7,7 @@ import { routeTree } from "./routeTree.gen";
 // Import styles
 import "./index.css";
 import { queryClient } from "./lib/trpc-client";
+import { HelmetProvider } from "react-helmet-async";
 
 // Create a new router instance
 const router = createRouter({
@@ -38,8 +39,10 @@ const rootElement = document.getElementById("root")!;
 if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </HelmetProvider>,
   );
 }
