@@ -1,7 +1,7 @@
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 
 // Define all available modal types
-export const MODAL_TYPES = ["login", "settings", "confirm"] as const;
+export const MODAL_TYPES = ["login", "settings", "confirm", "pricing"] as const;
 export type ModalType = (typeof MODAL_TYPES)[number];
 
 // Settings section types
@@ -51,6 +51,7 @@ export function useModal() {
     isLoginOpen: modal === "login",
     isSettingsOpen: modal === "settings",
     isConfirmOpen: modal === "confirm",
+    isPricingOpen: modal === "pricing",
     settingsSection: settingsSection ?? "general",
     setSettingsSection,
   };

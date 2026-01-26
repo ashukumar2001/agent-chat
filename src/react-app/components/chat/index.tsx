@@ -13,6 +13,8 @@ import {
 import { ChatMessage, ChatMessageMetadata } from "@/types/ai-types";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useChatUtils } from "@/hooks/use-chat-utils";
+import { useQueryClient } from "@tanstack/react-query";
+import { USAGE_STATS_QUERY_KEY } from "@/hooks/use-usage";
 
 export const Chat = ({
   chatId,
@@ -33,6 +35,7 @@ export const Chat = ({
   });
   const { createNewChatMutation, getChatById, updateChatMutation } =
     useChatUtils();
+  const queryClient = useQueryClient();
   const currentChat = useMemo(
     () => (chatId ? getChatById(chatId) : null),
     [chatId, getChatById]
@@ -219,9 +222,6 @@ export const Chat = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routerState]);
-  useEffect(() => {
-    console.log(agentMessages);
-  }, [agentMessages]);
 
   // Update selectedModel when currentChat changes (e.g., navigating to different chat)
   useEffect(() => {
@@ -231,6 +231,12 @@ export const Chat = ({
       setSelectedModel(DEFUALT_MODEL);
     }
   }, [currentChat?.model]);
+  // Invalidate usage stats when chat status changes from streaming to ready
+  useEffect(() => {
+    if (status === "ready") {
+      queryClient.invalidateQueries({ queryKey: USAGE_STATS_QUERY_KEY });
+    }
+  }, [status, queryClient]);
   return (
     <div className="@container/main relative flex h-full flex-col items-center justify-end md:justify-center">
       <ChatBox

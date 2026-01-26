@@ -28,3 +28,6 @@ dist-ssr
 .dev.vars*
 .env.*
 !.env.example
+
+# Localflare generated files
+.localflare/

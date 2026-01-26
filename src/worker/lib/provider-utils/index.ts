@@ -48,7 +48,7 @@ export type OpenProvidersOptions<T extends SupportedModel> = ModelSettings<T>;
 export function openproviders<T extends SupportedModel>(
   modelId: T,
   settings?: OpenProvidersOptions<T>,
-  apiKey?: string
+  apiKey?: string,
 ): LanguageModel {
   const provider = getProviderForModel(modelId);
 
@@ -89,12 +89,12 @@ export function openproviders<T extends SupportedModel>(
     if (apiKey) {
       const perplexityProvider = createPerplexity({ apiKey });
       return perplexityProvider(
-        modelId as PerplexityModel
+        modelId as PerplexityModel,
         // settings as PerplexityProviderSettings
       );
     }
     return perplexity(
-      modelId as PerplexityModel
+      modelId as PerplexityModel,
       // settings as PerplexityProviderSettings
     );
   }

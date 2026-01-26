@@ -1,27 +1,25 @@
-/**
- * For more details on how to configure Wrangler, refer to:
- * https://developers.cloudflare.com/workers/wrangler/configuration/
- */
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "eddy",
   "main": "./src/worker/index.ts",
-  "compatibility_date": "2025-04-01",
+  "compatibility_date": "2026-01-01",
   "compatibility_flags": [
     "nodejs_compat",
     "nodejs_compat_populate_process_env"
   ],
+  "assets": {
+    "not_found_handling": "single-page-application",
+    "directory": "./dist/",
+    "run_worker_first": ["/api/*", "/trpc/*", "/agents/*"]
+  },
   "observability": {
     "enabled": true
   },
   "upload_source_maps": true,
-  "assets": {
-    "not_found_handling": "single-page-application"
-  },
   "env": {
     "development": {
       "vars": {
-        "CLOUDFLARE_ENV": "dev"
+        "CLOUDFLARE_ENV": "development"
       },
       "durable_objects": {
         "bindings": [
@@ -55,7 +53,7 @@
     },
     "production": {
       "vars": {
-        "CLOUDFLARE_ENV": "prod"
+        "CLOUDFLARE_ENV": "production"
       },
       "durable_objects": {
         "bindings": [

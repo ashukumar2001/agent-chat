@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Lock, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PROVIDERS } from "./constants";
 import { trpc } from "@/lib/trpc-client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import useUserPreferences from "@/hooks/useUserPreferences";
+import { usePlanInfo } from "@/hooks/use-usage";
+import { useModal } from "@/hooks/use-modal";
 
 export const ApiKeysSettings: React.FC = () => {
+  const { planInfo, isLoading: isPlanLoading } = usePlanInfo();
+  const { openModal } = useModal();
+  const isPro = planInfo?.plan?.id === "pro";
   const [selectedProvider, setSelectedProvider] = useState<string>(
     PROVIDERS[0].id
   );
@@ -82,8 +87,54 @@ export const ApiKeysSettings: React.FC = () => {
   };
 
   const selectedProviderData = PROVIDERS.find((p) => p.id === selectedProvider);
+
+  // Show loading state while checking plan
+  if (isPlanLoading) {
+    return (
+      <div className="space-y-6 py-4">
+        <div>
+          <h3 className="text-lg font-semibold">API Keys</h3>
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show upgrade prompt for free users
+  if (!isPro) {
+    return (
+      <div className="space-y-6 py-4">
+        <div>
+          <h3 className="text-lg font-semibold">API Keys</h3>
+          <p className="text-sm text-muted-foreground">
+            Bring your own API keys to use with different AI providers.
+          </p>
+        </div>
+
+        <div className="flex flex-col items-center justify-center p-8 border border-dashed rounded-lg bg-muted/30">
+          <div className="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-950/30 flex items-center justify-center mb-4">
+            <Lock className="w-6 h-6 text-orange-500" />
+          </div>
+          <h4 className="text-lg font-semibold mb-2">Pro Feature</h4>
+          <p className="text-sm text-muted-foreground text-center max-w-md mb-4">
+            BYOK (Bring Your Own Key) is available exclusively for Pro users.
+            Upgrade to Pro to use your own API keys for unlimited usage with any
+            provider.
+          </p>
+          <Button
+            onClick={() => openModal("pricing")}
+            className="bg-orange-500 hover:bg-orange-600 text-white"
+          >
+            <Sparkles className="w-4 h-4 mr-2" />
+            Upgrade to Pro
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6 pb-4">
+    <div className="space-y-6 py-4">
       <div>
         <h3 className="text-lg font-semibold">API Keys</h3>
         <p className="text-sm text-muted-foreground">
