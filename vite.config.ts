@@ -21,11 +21,6 @@ export default defineConfig({
     tailwindcss(),
     cloudflare(),
   ],
-  define: {
-    "import.meta.env.VITE_DODO_PRO_PRODUCT_ID": JSON.stringify(
-      process.env.DODO_PRO_PRODUCT_ID,
-    ),
-  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src/react-app"),
