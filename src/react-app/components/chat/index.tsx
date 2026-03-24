@@ -4,12 +4,8 @@ import { ChatInput } from "../chat-input";
 import { useEffect, useMemo, useState } from "react";
 import { DEFUALT_MODEL } from "@worker/lib/config";
 import { toast } from "sonner";
-import { useAgentChat } from "agents/ai-react";
-import {
-  ChatAddToolApproveResponseFunction,
-  isToolUIPart,
-  lastAssistantMessageIsCompleteWithToolCalls,
-} from "ai";
+import { useAgentChat } from "@cloudflare/ai-chat/react";
+import { ChatAddToolApproveResponseFunction, isToolUIPart } from "ai";
 import { ChatMessage, ChatMessageMetadata } from "@/types/ai-types";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useChatUtils } from "@/hooks/use-chat-utils";
@@ -38,7 +34,7 @@ export const Chat = ({
   const queryClient = useQueryClient();
   const currentChat = useMemo(
     () => (chatId ? getChatById(chatId) : null),
-    [chatId, getChatById]
+    [chatId, getChatById],
   );
 
   const agent = useAgent({
@@ -59,37 +55,14 @@ export const Chat = ({
         closeButton: true,
       });
     },
-    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
-    prepareSendMessagesRequest({
-      messages,
-      id,
-      body,
-      trigger,
-      headers,
-      api,
-      credentials,
-      messageId,
-    }) {
-      return {
-        headers,
-        body: {
-          messageId,
-          id,
-          messages,
-          trigger,
-          metadata: {
-            ...((body?.metadata || {
-              chatId,
-              userId,
-              model: selectedModel,
-              webSearch: isWebSearchEnabled,
-            }) as ChatMessageMetadata),
-          },
-        },
-        api,
-        credentials,
-      };
-    },
+    // sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+    body: () =>
+      ({
+        chatId,
+        userId,
+        model: selectedModel,
+        webSearch: isWebSearchEnabled,
+      }) as ChatMessageMetadata,
     onToolCall: async (params) => {
       if ("addToolOutput" in params) {
         const { toolCall, addToolOutput } = params;
@@ -97,7 +70,7 @@ export const Chat = ({
           const position = await new Promise<GeolocationPosition>(
             (resolve, reject) => {
               navigator.geolocation.getCurrentPosition(resolve, reject);
-            }
+            },
           );
           await new Promise((resolve) => setTimeout(resolve, 2000));
           addToolOutput({
@@ -114,12 +87,12 @@ export const Chat = ({
 
   const pendingToolCallConfirmation = agentMessages.some((m) =>
     m.parts?.some(
-      (part) => isToolUIPart(part) && part.state === "approval-requested"
-    )
+      (part) => isToolUIPart(part) && part.state === "approval-requested",
+    ),
   );
 
   const [selectedModel, setSelectedModel] = useState(
-    currentChat?.model || DEFUALT_MODEL
+    currentChat?.model || DEFUALT_MODEL,
   );
   const [agentInput, setAgentInput] = useState("");
   const [isWebSearchEnabled, setIsWebSearchEnabled] = useState(false);
@@ -146,15 +119,14 @@ export const Chat = ({
   };
 
   const addToolApprovalResponse: ChatAddToolApproveResponseFunction = (
-    data
+    data,
   ) => {
     agentAddToolApprovalResponse(data);
-    sendMessage();
   };
   const ensureChatExists = async (
     chatId: string | undefined,
     input: string,
-    customChatId?: string
+    customChatId?: string,
   ) => {
     if (!chatId) {
       const newChat = await createNewChatMutation.mutateAsync({
@@ -178,14 +150,14 @@ export const Chat = ({
     chatConfig?: {
       modelId?: string;
       webSearchEnabled?: boolean;
-    }
+    },
   ) => {
     setIsSubmitting(true);
     try {
       const _chatId = await ensureChatExists(
         currentChat?.id,
         input || agentInput,
-        chatId
+        chatId,
       );
       if (!_chatId) return;
 
@@ -195,14 +167,12 @@ export const Chat = ({
         },
         {
           body: {
-            metadata: {
-              model: chatConfig?.modelId || selectedModel,
-              userId,
-              chatId: _chatId,
-              webSearch: chatConfig?.webSearchEnabled ?? isWebSearchEnabled,
-            },
+            model: chatConfig?.modelId || selectedModel,
+            userId,
+            chatId: _chatId,
+            webSearch: chatConfig?.webSearchEnabled ?? isWebSearchEnabled,
           },
-        }
+        },
       );
       setAgentInput("");
     } catch (error) {

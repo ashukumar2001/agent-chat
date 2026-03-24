@@ -2,6 +2,7 @@ const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
 
 const isLikelyHex = (value: string): boolean => /^[0-9a-fA-F]+$/.test(value);
+const toArrayBuffer = (bytes: Uint8Array): ArrayBuffer => Uint8Array.from(bytes).buffer;
 
 const hexToBytes = (hex: string): Uint8Array => {
   const normalized = hex.length % 2 === 0 ? hex : `0${hex}`;
@@ -36,7 +37,7 @@ const importAesGcmKey = async (rawKeyBytes: Uint8Array): Promise<CryptoKey> => {
   }
   return crypto.subtle.importKey(
     "raw",
-    rawKeyBytes,
+    toArrayBuffer(rawKeyBytes),
     { name: "AES-GCM" },
     false,
     ["encrypt", "decrypt"]
@@ -70,9 +71,9 @@ export const encryptString = async (
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const data = textEncoder.encode(plaintext);
   const encrypted = await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv },
+    { name: "AES-GCM", iv: toArrayBuffer(iv) },
     key,
-    data
+    toArrayBuffer(data)
   );
   const combined = new Uint8Array(iv.byteLength + encrypted.byteLength);
   combined.set(iv, 0);
@@ -93,9 +94,9 @@ export const decryptString = async (
   const iv = combined.slice(0, 12);
   const encrypted = combined.slice(12);
   const decrypted = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv },
+    { name: "AES-GCM", iv: toArrayBuffer(iv) },
     key,
-    encrypted
+    toArrayBuffer(encrypted)
   );
   return textDecoder.decode(decrypted);
 };

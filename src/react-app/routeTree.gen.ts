@@ -31,8 +31,8 @@ const ChatChatIdIndexRoute = ChatChatIdIndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/chat': typeof ChatIndexRoute
-  '/chat/$chatId': typeof ChatChatIdIndexRoute
+  '/chat/': typeof ChatIndexRoute
+  '/chat/$chatId/': typeof ChatChatIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -47,7 +47,7 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/chat' | '/chat/$chatId'
+  fullPaths: '/' | '/chat/' | '/chat/$chatId/'
   fileRoutesByTo: FileRoutesByTo
   to: '/' | '/chat' | '/chat/$chatId'
   id: '__root__' | '/' | '/chat/' | '/chat/$chatId/'
@@ -71,14 +71,14 @@ declare module '@tanstack/react-router' {
     '/chat/': {
       id: '/chat/'
       path: '/chat'
-      fullPath: '/chat'
+      fullPath: '/chat/'
       preLoaderRoute: typeof ChatIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/chat/$chatId/': {
       id: '/chat/$chatId/'
       path: '/chat/$chatId'
-      fullPath: '/chat/$chatId'
+      fullPath: '/chat/$chatId/'
       preLoaderRoute: typeof ChatChatIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }

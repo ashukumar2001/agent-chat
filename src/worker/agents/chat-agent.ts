@@ -9,9 +9,9 @@ import {
 import { tools } from "../lib/tools";
 import { DEFAULT_SYSTEM_PROMPT, DEFUALT_MODEL } from "../lib/config";
 import { MODELS } from "../lib/models";
-import { google } from "@ai-sdk/google";
+import { google, GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
 import { getUserKey } from "../lib/user-keys";
-import { AIChatAgent, type OnChatMessageOptions } from "./ai-chat-agent";
+import { AIChatAgent, type OnChatMessageOptions } from "@cloudflare/ai-chat";
 import { checkUsageLimit, incrementUsage } from "../lib/usage";
 
 export class ChatAgent extends AIChatAgent<Env> {
@@ -40,7 +40,7 @@ export class ChatAgent extends AIChatAgent<Env> {
 
   async onChatMessage(
     onFinish: StreamTextOnFinishCallback<ToolSet>,
-    { abortSignal, metadata }: OnChatMessageOptions,
+    { abortSignal, body: metadata }: OnChatMessageOptions,
   ) {
     const userId = (metadata?.userId as string) || "";
     const modelId = (metadata?.model as string) ?? DEFUALT_MODEL;
@@ -53,7 +53,8 @@ export class ChatAgent extends AIChatAgent<Env> {
       return this.createErrorResponse(`Model ${modelId} not found`);
     }
 
-    let modelInstance: LanguageModel | null = null;
+    let modelInstance: LanguageModel | null;
+
     const apiKey = await getUserKey(userId, modelConfig.providerId, this.env);
     const hasOwnApiKey = Boolean(apiKey);
 
@@ -95,7 +96,7 @@ export class ChatAgent extends AIChatAgent<Env> {
             await incrementUsage(
               userId,
               modelId,
-              finishResult.usage?.inputTokens ?? 0,
+
               finishResult.usage?.outputTokens ?? 0,
             );
           } catch (error) {
@@ -112,16 +113,16 @@ export class ChatAgent extends AIChatAgent<Env> {
         : undefined,
       stopWhen: stepCountIs(5),
       abortSignal,
-      // providerOptions: {
-      //   google: {
-      //     ...(modelConfig.reasoning && {
-      //       thinkingConfig: {
-      //         includeThoughts: true,
-      //         thinkingBudget: modelConfig.reasoning ? 1024 : 0,
-      //       },
-      //     }),
-      //   } as GoogleGenerativeAIProviderOptions,
-      // },
+      providerOptions: {
+        google: {
+          ...(modelConfig.reasoning && {
+            thinkingConfig: {
+              includeThoughts: true,
+              thinkingBudget: modelConfig.reasoning ? 1024 : 0,
+            },
+          }),
+        } as GoogleGenerativeAIProviderOptions,
+      },
     });
 
     return result.toUIMessageStreamResponse({

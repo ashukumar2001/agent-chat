@@ -1,7 +1,8 @@
 import path from "path";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import babel from "@rolldown/plugin-babel";
+import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 
@@ -13,11 +14,8 @@ export default defineConfig({
       routesDirectory: "./src/react-app/routes",
       generatedRouteTree: "./src/react-app/routeTree.gen.ts",
     }),
-    react({
-      babel: {
-        plugins: [["babel-plugin-react-compiler", {}]],
-      },
-    }),
+    react(),
+    babel({ presets: [reactCompilerPreset()] }),
     tailwindcss(),
     cloudflare(),
   ],
