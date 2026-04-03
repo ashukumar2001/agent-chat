@@ -1,7 +1,7 @@
 import { useAgent } from "agents/react";
 import { ChatBox } from "./chat-box";
 import { ChatInput } from "../chat-input";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { DEFUALT_MODEL } from "@worker/lib/config";
 import { toast } from "sonner";
 import { useAgentChat } from "@cloudflare/ai-chat/react";
@@ -183,12 +183,16 @@ export const Chat = ({
     }
   };
 
+  const hasSubmittedRouterMessage = useRef(false);
   useEffect(() => {
-    if (routerState.message) {
+    if (routerState.message && !hasSubmittedRouterMessage.current) {
+      hasSubmittedRouterMessage.current = true;
       onSubmit(routerState.message, routerState.chatConfig).then(() => {
-        // Create navigation state to prevent resubmission
         navigate({ to: routerState.pathname, replace: true });
       });
+    }
+    if (!routerState.message) {
+      hasSubmittedRouterMessage.current = false;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routerState]);

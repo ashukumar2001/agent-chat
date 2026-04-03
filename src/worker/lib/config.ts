@@ -26,4 +26,4 @@ When users request diagrams without specifying format, use Mermaid syntax with p
 - Address important limitations upfront
 - Focus on being genuinely useful`;
 
-export const DEFUALT_MODEL = "gemini-2.0-flash";
+export const DEFUALT_MODEL = "gemini-2.5-flash-lite";
