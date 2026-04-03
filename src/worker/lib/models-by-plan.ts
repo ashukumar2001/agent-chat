@@ -3,6 +3,7 @@
  */
 export const FREE_TIER_MODELS = [
   "gemini-2.5-flash-lite",
+  "gemini-3.1-flash-lite-preview",
   "gpt-5-nano",
   "gpt-4o-mini",
 ];
@@ -22,5 +23,5 @@ export const PREMIUM_MODELS = [
   "o3",
   "o4-mini",
   "gemini-2.5-pro",
-  "gemini-3-pro-preview",
+  "gemini-3.1-pro-preview",
 ];

@@ -115,7 +115,7 @@ export const openrouterModels: ModelConfig[] = [
       }).chat("google/gemini-2.5-pro"),
   },
   {
-    id: "openrouter:google/gemini-3-flash-preview",
+    id: "openrouter:google/gemini-3-flash-preview-preview",
     name: "Gemini 3 Flash Preview",
     provider: "OpenRouter",
     providerId: "openrouter",
@@ -136,8 +136,8 @@ export const openrouterModels: ModelConfig[] = [
     openSource: false,
     speed: "Fast",
     intelligence: "High",
-    website: "https://openrouter.ai/google/gemini-3-flash-preview",
-    apiDocs: "https://openrouter.ai/google/gemini-3-flash-preview",
+    website: "https://openrouter.ai/google/gemini-3-flash-preview-preview",
+    apiDocs: "https://openrouter.ai/google/gemini-3-flash-preview-preview",
     modelPage: "https://ai.google.dev",
     releasedAt: "2026-01-01",
     icon: "gemini",
@@ -149,7 +149,7 @@ export const openrouterModels: ModelConfig[] = [
             plugins: [{ id: "web", max_results: 3 }],
           },
         }),
-      }).chat("google/gemini-3-flash-preview"),
+      }).chat("google/gemini-3-flash-preview-preview"),
   },
   {
     id: "openrouter:google/gemini-3-pro-preview",
