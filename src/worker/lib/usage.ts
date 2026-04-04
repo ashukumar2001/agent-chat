@@ -213,13 +213,32 @@ export const checkUsageLimit = async (
 };
 
 /**
- * Increment usage after a successful request
+ * Add token counts for a completed model call (no request-quota change).
  */
-export const incrementUsage = async (
+export const incrementTokenUsage = async (
   userId: string,
-  modelId: string,
   inputTokens: number = 0,
   outputTokens: number = 0,
+): Promise<void> => {
+  const plan = await getUserPlan(userId);
+  const usageRecord = await getOrCreateUsageRecord(userId, plan);
+
+  await db
+    .update(usage)
+    .set({
+      inputTokens: usageRecord.inputTokens + inputTokens,
+      outputTokens: usageRecord.outputTokens + outputTokens,
+      updatedAt: new Date(),
+    })
+    .where(eq(usage.id, usageRecord.id));
+};
+
+/**
+ * Increment fast vs premium request quota by one (no token change).
+ */
+export const incrementRequestQuota = async (
+  userId: string,
+  modelId: string,
 ): Promise<void> => {
   const plan = await getUserPlan(userId);
   const usageRecord = await getOrCreateUsageRecord(userId, plan);
@@ -234,11 +253,22 @@ export const incrementUsage = async (
       premiumModelRequests: isPremium
         ? usageRecord.premiumModelRequests + 1
         : usageRecord.premiumModelRequests,
-      inputTokens: usageRecord.inputTokens + inputTokens,
-      outputTokens: usageRecord.outputTokens + outputTokens,
       updatedAt: new Date(),
     })
     .where(eq(usage.id, usageRecord.id));
+};
+
+/**
+ * Increment usage after a successful request (one billable request + tokens).
+ */
+export const incrementUsage = async (
+  userId: string,
+  modelId: string,
+  inputTokens: number = 0,
+  outputTokens: number = 0,
+): Promise<void> => {
+  await incrementRequestQuota(userId, modelId);
+  await incrementTokenUsage(userId, inputTokens, outputTokens);
 };
 
 /**

@@ -6,6 +6,7 @@ import { routeTree } from "./routeTree.gen";
 
 // Import styles
 import "./index.css";
+import "katex/dist/katex.min.css";
 import { queryClient } from "./lib/trpc-client";
 import { HelmetProvider } from "react-helmet-async";
 
