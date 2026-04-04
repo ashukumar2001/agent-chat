@@ -54,20 +54,28 @@ function GitHubIcon({ className }: { className?: string }) {
   );
 }
 
+const getOAuthCallbackUrl = () => {
+  const url = new URL(window.location.href);
+  if (url.searchParams.get("modal") === "login") {
+    url.searchParams.delete("modal");
+  }
+  return url.toString();
+};
+
 export function LoginModal() {
   const { isLoginOpen, closeModal } = useModal();
 
   const handleGoogleSignIn = async () => {
     await authClient.signIn.social({
       provider: "google",
-      callbackURL: window.location.href,
+      callbackURL: getOAuthCallbackUrl(),
     });
   };
 
   const handleGitHubSignIn = async () => {
     await authClient.signIn.social({
       provider: "github",
-      callbackURL: window.location.href,
+      callbackURL: getOAuthCallbackUrl(),
     });
   };
 
