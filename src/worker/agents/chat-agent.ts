@@ -5,6 +5,7 @@ import {
   LanguageModel,
   StreamTextOnFinishCallback,
   ToolSet,
+  type UIMessage,
 } from "ai";
 import { tools } from "../lib/tools";
 import { DEFAULT_SYSTEM_PROMPT, DEFUALT_MODEL } from "../lib/config";
@@ -12,9 +13,20 @@ import { MODELS } from "../lib/models";
 import { google, GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
 import { getUserKey } from "../lib/user-keys";
 import { AIChatAgent, type OnChatMessageOptions } from "@cloudflare/ai-chat";
-import { checkUsageLimit, incrementUsage } from "../lib/usage";
+import {
+  checkUsageLimit,
+  incrementRequestQuota,
+  incrementTokenUsage,
+} from "../lib/usage";
+
+type UsageBillingContext = {
+  userId: string;
+  modelId: string;
+  hasOwnApiKey: boolean;
+};
 
 export class ChatAgent extends AIChatAgent<Env> {
+  private _usageBillingByRequestId = new Map<string, UsageBillingContext>();
   /**
    * Creates an SSE-formatted error response that will be processed by _reply.
    * This ensures errors go through the normal stream processing path.
@@ -28,7 +40,6 @@ export class ChatAgent extends AIChatAgent<Env> {
           type: "error",
           errorText: errorMessage,
         });
-        // SSE format: "data: {json}\n\n"
         controller.enqueue(encoder.encode(`data: ${errorEvent}\n\n`));
         controller.close();
       },
@@ -40,7 +51,7 @@ export class ChatAgent extends AIChatAgent<Env> {
 
   async onChatMessage(
     onFinish: StreamTextOnFinishCallback<ToolSet>,
-    { abortSignal, body: metadata }: OnChatMessageOptions,
+    { abortSignal, body: metadata, requestId }: OnChatMessageOptions,
   ) {
     const userId = (metadata?.userId as string) || "";
     const modelId = (metadata?.model as string) ?? DEFUALT_MODEL;
@@ -84,23 +95,28 @@ export class ChatAgent extends AIChatAgent<Env> {
       );
     }
 
+    this._usageBillingByRequestId.set(requestId, {
+      userId,
+      modelId,
+      hasOwnApiKey,
+    });
+
     // Use streamText directly and return with metadata
     const result = streamText({
       system: DEFAULT_SYSTEM_PROMPT,
       messages: await convertToModelMessages(this.messages),
       model: modelInstance!,
       onFinish: async (finishResult) => {
-        // Increment usage after successful completion (only if using platform API)
+        // Token usage for every completed model segment (incl. tool-approval continuations)
         if (!hasOwnApiKey && userId) {
           try {
-            await incrementUsage(
+            await incrementTokenUsage(
               userId,
-              modelId,
-
+              finishResult.usage?.inputTokens ?? 0,
               finishResult.usage?.outputTokens ?? 0,
             );
           } catch (error) {
-            console.error("Failed to increment usage:", error);
+            console.error("Failed to increment token usage:", error);
           }
         }
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -149,5 +165,34 @@ export class ChatAgent extends AIChatAgent<Env> {
         }
       },
     });
+  }
+
+  protected override async onChatResponse(result: {
+    message: UIMessage;
+    requestId: string;
+    continuation: boolean;
+    status: "completed" | "error" | "aborted";
+    error?: string;
+  }): Promise<void> {
+    await super.onChatResponse(result);
+
+    const ctx = this._usageBillingByRequestId.get(result.requestId);
+    this._usageBillingByRequestId.delete(result.requestId);
+
+    if (
+      !ctx ||
+      ctx.hasOwnApiKey ||
+      !ctx.userId ||
+      result.status !== "completed" ||
+      result.continuation
+    ) {
+      return;
+    }
+
+    try {
+      await incrementRequestQuota(ctx.userId, ctx.modelId);
+    } catch (error) {
+      console.error("Failed to increment request quota:", error);
+    }
   }
 }
