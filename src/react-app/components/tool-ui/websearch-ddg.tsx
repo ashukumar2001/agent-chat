@@ -20,7 +20,7 @@ import {
   SourcesContent,
   SourcesTrigger,
   Source as SourcesItem,
-} from "@/components/ai-elements/source";
+} from "@/components/ai-elements/sources";
 import { WebSearchToolInvocation } from "@worker/tools/websearch-ddg/tool";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -40,7 +40,7 @@ export function WebSearchList({
   const renderHeader = (
     title: React.ReactNode,
     description?: React.ReactNode,
-    actions?: React.ReactNode
+    actions?: React.ReactNode,
   ) => {
     const descriptionNode =
       typeof description === "string" ? (
@@ -76,7 +76,7 @@ export function WebSearchList({
         <CardContent
           className={cn(
             contentBaseClass,
-            "space-y-4 text-sm text-muted-foreground"
+            "space-y-4 text-sm text-muted-foreground",
           )}
         >
           <div className="flex items-center gap-2">
@@ -138,7 +138,7 @@ export function WebSearchList({
         "Web Search",
         <span className="text-xs text-muted-foreground">
           Query <span className="font-medium text-foreground">{query}</span>
-        </span>
+        </span>,
       )}
       <CardContent className={cn(contentBaseClass, "space-y-4")}>
         {results.length === 0 ? (
