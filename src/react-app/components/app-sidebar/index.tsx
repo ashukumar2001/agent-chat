@@ -136,7 +136,7 @@ const ChatItem = memo(function ChatItem({
         />
         <DropdownMenuContent className="min-w-40" align="start">
           <DropdownMenuGroup>
-            <DropdownMenuItem variant="destructive" onSelect={handleDelete}>
+            <DropdownMenuItem variant="destructive" onClick={handleDelete}>
               <TrashIcon />
               Delete
             </DropdownMenuItem>

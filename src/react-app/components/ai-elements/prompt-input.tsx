@@ -40,6 +40,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import type { BaseUIEvent } from "@base-ui/react/types";
 import type { ChatStatus, FileUIPart, SourceDocumentUIPart } from "ai";
 import {
   CornerDownLeftIcon,
@@ -59,6 +60,7 @@ import type {
   FormEventHandler,
   HTMLAttributes,
   KeyboardEventHandler,
+  MouseEvent,
   PropsWithChildren,
   ReactNode,
   RefObject,
@@ -420,8 +422,10 @@ export const PromptInputActionAddAttachments = ({
 }: PromptInputActionAddAttachmentsProps) => {
   const attachments = usePromptInputAttachments();
 
-  const handleSelect = useCallback(
-    (e: Event) => {
+  const handleClick = useCallback<
+    NonNullable<ComponentProps<typeof DropdownMenuItem>["onClick"]>
+  >(
+    (e) => {
       e.preventDefault();
       attachments.openFileDialog();
     },
@@ -429,7 +433,7 @@ export const PromptInputActionAddAttachments = ({
   );
 
   return (
-    <DropdownMenuItem {...props} onSelect={handleSelect}>
+    <DropdownMenuItem {...props} onClick={handleClick}>
       <ImageIcon className="mr-2 size-4" /> {label}
     </DropdownMenuItem>
   );
@@ -443,14 +447,16 @@ export type PromptInputActionAddScreenshotProps = ComponentProps<
 
 export const PromptInputActionAddScreenshot = ({
   label = "Take screenshot",
-  onSelect,
+  onClick,
   ...props
 }: PromptInputActionAddScreenshotProps) => {
   const attachments = usePromptInputAttachments();
 
-  const handleSelect = useCallback(
-    async (event: Event) => {
-      onSelect?.(event);
+  const handleClick = useCallback<
+    NonNullable<ComponentProps<typeof DropdownMenuItem>["onClick"]>
+  >(
+    async (event) => {
+      onClick?.(event);
       if (event.defaultPrevented) {
         return;
       }
@@ -470,11 +476,11 @@ export const PromptInputActionAddScreenshot = ({
         throw error;
       }
     },
-    [onSelect, attachments]
+    [onClick, attachments]
   );
 
   return (
-    <DropdownMenuItem {...props} onSelect={handleSelect}>
+    <DropdownMenuItem {...props} onClick={handleClick}>
       <Monitor className="mr-2 size-4" />
       {label}
     </DropdownMenuItem>
@@ -1232,7 +1238,7 @@ export const PromptInputSubmit = ({
   }
 
   const handleClick = useCallback(
-    (e: React.MouseEvent<HTMLButtonElement>) => {
+    (e: BaseUIEvent<MouseEvent<HTMLButtonElement>>) => {
       if (isGenerating && onStop) {
         e.preventDefault();
         onStop();
@@ -1313,12 +1319,8 @@ export const PromptInputSelectValue = ({
 
 export type PromptInputHoverCardProps = ComponentProps<typeof HoverCard>;
 
-export const PromptInputHoverCard = ({
-  openDelay = 0,
-  closeDelay = 0,
-  ...props
-}: PromptInputHoverCardProps) => (
-  <HoverCard closeDelay={closeDelay} openDelay={openDelay} {...props} />
+export const PromptInputHoverCard = (props: PromptInputHoverCardProps) => (
+  <HoverCard {...props} />
 );
 
 export type PromptInputHoverCardTriggerProps = ComponentProps<

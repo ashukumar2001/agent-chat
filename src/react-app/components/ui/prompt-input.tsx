@@ -8,6 +8,7 @@ import {
 import { cn } from "@/lib/utils";
 import React, {
   createContext,
+  isValidElement,
   useContext,
   useEffect,
   useRef,
@@ -174,15 +175,19 @@ function PromptInputAction({
 }: PromptInputActionProps) {
   const { disabled } = usePromptInput();
 
+  const trigger = isValidElement(children) ? (
+    children
+  ) : (
+    <span className="inline-flex">{children}</span>
+  );
+
   return (
     <Tooltip {...props}>
       <TooltipTrigger
-        asChild
         disabled={disabled}
         onClick={(event) => event.stopPropagation()}
-      >
-        {children}
-      </TooltipTrigger>
+        render={trigger}
+      />
       <TooltipContent side={side} className={className}>
         {tooltip}
       </TooltipContent>
