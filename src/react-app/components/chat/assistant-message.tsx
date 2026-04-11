@@ -66,7 +66,7 @@ export const AssistantMessage = ({
       return MODELS.find((model) => model.id === metadata.model);
     }
     return;
-  }, [metadata?.model]);
+  }, [metadata]);
   const sources = parts?.filter((part) => part.type === "source-url") || [];
 
   return (

@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { DodoPayments } from "dodopayments-checkout";
 import { Check, Sparkles, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -160,41 +160,43 @@ export const PricingModal = memo(function PricingModal() {
   // const { customerId } = useCustomer();
   const { isPricingOpen, closeModal } = useModal();
   const [isLoading, setIsLoading] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
+  const dodoInitRef = useRef(false);
 
   // Initialize Dodo Payments checkout
   useEffect(() => {
-    if (!isInitialized) {
-      DodoPayments.Initialize({
-        mode: import.meta.env.VITE_DODO_MODE === "live" ? "live" : "test",
-        displayType: "overlay",
-        onEvent: (event) => {
-          const eventType = (event as { type?: string }).type;
-
-          if (eventType === "checkout.closed") {
-            setIsLoading(false);
-            // Refetch subscription after checkout closes
-            setTimeout(() => refetch(), 1000);
-          }
-
-          if (eventType === "checkout.error") {
-            toast.error("Payment error", {
-              description: "Something went wrong. Please try again.",
-            });
-            setIsLoading(false);
-          }
-
-          if (eventType === "checkout.redirect") {
-            // Payment successful, will redirect
-            toast.success("Payment successful!", {
-              description: "Your subscription is now active.",
-            });
-          }
-        },
-      });
-      setIsInitialized(true);
+    if (dodoInitRef.current) {
+      return;
     }
-  }, [isInitialized, refetch]);
+    dodoInitRef.current = true;
+
+    DodoPayments.Initialize({
+      mode: import.meta.env.VITE_DODO_MODE === "live" ? "live" : "test",
+      displayType: "overlay",
+      onEvent: (event) => {
+        const eventType = (event as { type?: string }).type;
+
+        if (eventType === "checkout.closed") {
+          setIsLoading(false);
+          // Refetch subscription after checkout closes
+          setTimeout(() => refetch(), 1000);
+        }
+
+        if (eventType === "checkout.error") {
+          toast.error("Payment error", {
+            description: "Something went wrong. Please try again.",
+          });
+          setIsLoading(false);
+        }
+
+        if (eventType === "checkout.redirect") {
+          // Payment successful, will redirect
+          toast.success("Payment successful!", {
+            description: "Your subscription is now active.",
+          });
+        }
+      },
+    });
+  }, [refetch]);
 
   const handleSubscribe = useCallback(
     async (productId: string) => {

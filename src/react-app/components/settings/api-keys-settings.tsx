@@ -50,13 +50,16 @@ export const ApiKeysSettings: React.FC = () => {
     })
   );
 
-  // Update input field when provider selection changes
+  // Update input field when provider selection changes (defer to avoid sync setState in effect)
   useEffect(() => {
     const defaultKey = PROVIDERS.find(
       (p) => p.id === selectedProvider
     )?.defaultKey;
-    setCurrentKeyInput(userApiKeysStatus[selectedProvider] ? defaultKey! : "");
-    setHasChanges(false);
+    const id = requestAnimationFrame(() => {
+      setCurrentKeyInput(userApiKeysStatus[selectedProvider] ? defaultKey! : "");
+      setHasChanges(false);
+    });
+    return () => cancelAnimationFrame(id);
   }, [selectedProvider, userApiKeysStatus]);
 
   const handleProviderSelect = (providerId: string) => {
