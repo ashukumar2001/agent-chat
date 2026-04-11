@@ -1,9 +1,11 @@
-import React from "react";
+import type { ComponentType, SVGProps } from "react";
+
+export type SettingsIcon = ComponentType<SVGProps<SVGSVGElement>>;
 
 export interface Provider {
     id: string;
     name: string;
-    icon: React.ComponentType<any>;
+    icon: SettingsIcon;
     placeholder: string;
     getKeyUrl: string;
     defaultKey: string;
@@ -19,5 +21,5 @@ export type SettingsSection =
 export interface SettingsSectionItem {
     id: SettingsSection;
     label: string;
-    icon: React.ComponentType<any>;
+    icon: SettingsIcon;
 }

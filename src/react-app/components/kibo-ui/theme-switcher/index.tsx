@@ -2,7 +2,7 @@
 
 import { Monitor, Moon, Sun } from "lucide-react";
 import { motion } from "motion/react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/theme-provider";
 
@@ -24,9 +24,15 @@ const themes = [
   },
 ];
 
+const emptySubscribe = () => () => {};
+
 export const ThemeSwitcher = () => {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
 
   const handleThemeClick = useCallback(
     (themeKey: "light" | "dark" | "system") => {
@@ -34,11 +40,6 @@ export const ThemeSwitcher = () => {
     },
     [setTheme]
   );
-
-  // Prevent hydration mismatch
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   if (!mounted) {
     return null;

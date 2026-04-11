@@ -35,7 +35,7 @@ export const UserMessage = ({
         <MessageAction
           tooltip={copied ? "Copied!" : "Copy text"}
           side="bottom"
-          delayDuration={0}
+          delay={0}
         >
           <button
             className="flex h-8 w-8 items-center justify-center rounded-full bg-transparent transition"

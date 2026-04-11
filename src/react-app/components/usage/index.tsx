@@ -52,10 +52,10 @@ const UsageBar = memo(function UsageBar({
         </div>
         <TooltipProvider>
           <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="text-sm text-muted-foreground">
-                {used.toLocaleString()} / {limit.toLocaleString()}
-              </span>
+            <TooltipTrigger
+              render={<span className="text-sm text-muted-foreground" />}
+            >
+              {used.toLocaleString()} / {limit.toLocaleString()}
             </TooltipTrigger>
             <TooltipContent>
               <p>
@@ -140,15 +140,18 @@ export const UsageCard = memo(function UsageCard({
     return (
       <TooltipProvider>
         <Tooltip>
-          <TooltipTrigger asChild>
-            <div
-              className={cn(
-                "flex items-center gap-3 px-3 py-1.5 rounded-full text-xs cursor-pointer transition-colors",
-                isNearLimit
-                  ? "bg-destructive/10 text-destructive hover:bg-destructive/20"
-                  : "bg-muted hover:bg-muted/80"
-              )}
-            >
+          <TooltipTrigger
+            render={
+              <div
+                className={cn(
+                  "flex items-center gap-3 px-3 py-1.5 rounded-full text-xs cursor-pointer transition-colors",
+                  isNearLimit
+                    ? "bg-destructive/10 text-destructive hover:bg-destructive/20"
+                    : "bg-muted hover:bg-muted/80"
+                )}
+              />
+            }
+          >
               <div
                 className={cn(
                   "flex items-center gap-1",
@@ -178,7 +181,6 @@ export const UsageCard = memo(function UsageCard({
                   </div>
                 </>
               )}
-            </div>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="max-w-xs">
             <div className="space-y-1">

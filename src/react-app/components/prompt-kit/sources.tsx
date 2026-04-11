@@ -23,18 +23,16 @@ export type SourceProps = {
 };
 
 export function Source({ href, children }: SourceProps) {
-  let domain = "";
+  let domain: string;
   try {
     domain = new URL(href).hostname;
   } catch {
-    domain = href.split("/").pop() || href;
+    domain = href.split("/").pop() ?? href;
   }
 
   return (
     <SourceContext.Provider value={{ href, domain }}>
-      <HoverCard openDelay={150} closeDelay={0}>
-        {children}
-      </HoverCard>
+      <HoverCard>{children}</HoverCard>
     </SourceContext.Provider>
   );
 }
@@ -54,30 +52,34 @@ export function SourceTrigger({
   const labelToShow = label ?? domain.replace("www.", "");
 
   return (
-    <HoverCardTrigger asChild>
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={cn(
-          "bg-muted text-muted-foreground hover:bg-muted-foreground/30 hover:text-primary inline-flex h-5 max-w-32 items-center gap-1 overflow-hidden rounded-full py-0 text-xs leading-none no-underline transition-colors duration-150",
-          showFavicon ? "pr-2 pl-1" : "px-1",
-          className
-        )}
-      >
-        {showFavicon && (
-          <img
-            src={`https://www.google.com/s2/favicons?sz=64&domain_url=${encodeURIComponent(
-              href
-            )}`}
-            alt="favicon"
-            width={14}
-            height={14}
-            className="size-3.5 rounded-full"
-          />
-        )}
-        <span className="truncate text-center font-normal">{labelToShow}</span>
-      </a>
+    <HoverCardTrigger
+      closeDelay={0}
+      delay={150}
+      render={
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={cn(
+            "bg-muted text-muted-foreground hover:bg-muted-foreground/30 hover:text-primary inline-flex h-5 max-w-32 items-center gap-1 overflow-hidden rounded-full py-0 text-xs leading-none no-underline transition-colors duration-150",
+            showFavicon ? "pr-2 pl-1" : "px-1",
+            className
+          )}
+        />
+      }
+    >
+      {showFavicon && (
+        <img
+          src={`https://www.google.com/s2/favicons?sz=64&domain_url=${encodeURIComponent(
+            href
+          )}`}
+          alt="favicon"
+          width={14}
+          height={14}
+          className="size-3.5 rounded-full"
+        />
+      )}
+      <span className="truncate text-center font-normal">{labelToShow}</span>
     </HoverCardTrigger>
   );
 }

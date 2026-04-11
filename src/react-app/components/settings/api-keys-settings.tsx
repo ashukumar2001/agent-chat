@@ -1,7 +1,32 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ExternalLink, Lock, Sparkles } from "lucide-react";
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+  FieldSet,
+  FieldLegend,
+} from "@/components/ui/field";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Spinner } from "@/components/ui/spinner";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  ActivitySparkIcon,
+  LinkSquare02Icon,
+  SquareLock02Icon,
+} from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
 import { PROVIDERS } from "./constants";
 import { trpc } from "@/lib/trpc-client";
@@ -10,6 +35,8 @@ import { toast } from "sonner";
 import useUserPreferences from "@/hooks/useUserPreferences";
 import { usePlanInfo } from "@/hooks/use-usage";
 import { useModal } from "@/hooks/use-modal";
+
+const API_KEY_INPUT_ID = "settings-api-key";
 
 export const ApiKeysSettings: React.FC = () => {
   const { planInfo, isLoading: isPlanLoading } = usePlanInfo();
@@ -50,25 +77,30 @@ export const ApiKeysSettings: React.FC = () => {
     })
   );
 
-  // Update input field when provider selection changes
   useEffect(() => {
     const defaultKey = PROVIDERS.find(
       (p) => p.id === selectedProvider
     )?.defaultKey;
-    setCurrentKeyInput(userApiKeysStatus[selectedProvider] ? defaultKey! : "");
-    setHasChanges(false);
+    const id = requestAnimationFrame(() => {
+      setCurrentKeyInput(userApiKeysStatus[selectedProvider] ? defaultKey! : "");
+      setHasChanges(false);
+    });
+    return () => cancelAnimationFrame(id);
   }, [selectedProvider, userApiKeysStatus]);
 
-  const handleProviderSelect = (providerId: string) => {
-    setSelectedProvider(providerId);
-  };
+  const handleProviderValueChange = useCallback((values: string[]) => {
+    const next = values[0];
+    if (next) {
+      setSelectedProvider(next);
+    }
+  }, []);
 
-  const handleKeyInputChange = (value: string) => {
+  const handleKeyInputChange = useCallback((value: string) => {
     setCurrentKeyInput(value);
     setHasChanges(true);
-  };
+  }, []);
 
-  const handleSaveApiKey = () => {
+  const handleSaveApiKey = useCallback(() => {
     if (currentKeyInput && currentKeyInput.trim()) {
       setUserApiKey({
         key: currentKeyInput.trim(),
@@ -78,176 +110,251 @@ export const ApiKeysSettings: React.FC = () => {
       deleteUserApiKey({ provider: selectedProvider });
     }
     setHasChanges(false);
-  };
+  }, [
+    currentKeyInput,
+    deleteUserApiKey,
+    selectedProvider,
+    setUserApiKey,
+  ]);
 
-  const handleDeleteKey = () => {
+  const handleDeleteKey = useCallback(() => {
     setCurrentKeyInput("");
     setHasChanges(false);
     deleteUserApiKey({ provider: selectedProvider });
-  };
+  }, [deleteUserApiKey, selectedProvider]);
 
   const selectedProviderData = PROVIDERS.find((p) => p.id === selectedProvider);
 
-  // Show loading state while checking plan
   if (isPlanLoading) {
     return (
-      <div className="space-y-6 py-4">
-        <div>
-          <h3 className="text-lg font-semibold">API Keys</h3>
-          <p className="text-sm text-muted-foreground">Loading...</p>
+      <div className="flex flex-col gap-6 py-2">
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-7 w-40" />
+          <Skeleton className="h-4 w-full max-w-md" />
         </div>
+        <Skeleton className="h-32 w-full rounded-4xl" />
+        <Skeleton className="h-48 w-full rounded-4xl" />
       </div>
     );
   }
 
-  // Show upgrade prompt for free users
   if (!isPro) {
     return (
-      <div className="space-y-6 py-4">
-        <div>
-          <h3 className="text-lg font-semibold">API Keys</h3>
+      <div className="flex flex-col gap-6 py-2">
+        <div className="flex flex-col gap-1">
+          <h3 className="font-heading text-lg font-medium">API keys</h3>
           <p className="text-sm text-muted-foreground">
             Bring your own API keys to use with different AI providers.
           </p>
         </div>
 
-        <div className="flex flex-col items-center justify-center p-8 border border-dashed rounded-lg bg-muted/30">
-          <div className="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-950/30 flex items-center justify-center mb-4">
-            <Lock className="w-6 h-6 text-orange-500" />
-          </div>
-          <h4 className="text-lg font-semibold mb-2">Pro Feature</h4>
-          <p className="text-sm text-muted-foreground text-center max-w-md mb-4">
-            BYOK (Bring Your Own Key) is available exclusively for Pro users.
-            Upgrade to Pro to use your own API keys for unlimited usage with any
-            provider.
-          </p>
-          <Button
-            onClick={() => openModal("pricing")}
-            className="bg-orange-500 hover:bg-orange-600 text-white"
-          >
-            <Sparkles className="w-4 h-4 mr-2" />
-            Upgrade to Pro
-          </Button>
-        </div>
+        <Alert className="border-dashed">
+          <HugeiconsIcon
+            icon={SquareLock02Icon}
+            strokeWidth={2}
+            className="size-6"
+          />
+          <AlertTitle>Pro feature</AlertTitle>
+          <AlertDescription className="flex flex-col gap-4">
+            <span>
+              BYOK (Bring Your Own Key) is available for Pro. Upgrade to connect
+              your own keys for unlimited usage with any provider.
+            </span>
+            <Button
+              type="button"
+              onClick={() => openModal("pricing")}
+              className="w-fit"
+            >
+              <HugeiconsIcon
+                icon={ActivitySparkIcon}
+                strokeWidth={2}
+                data-icon="inline-start"
+              />
+              Upgrade to Pro
+            </Button>
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 py-4">
-      <div>
-        <h3 className="text-lg font-semibold">API Keys</h3>
+    <div className="flex flex-col gap-6 py-2">
+      <div className="flex flex-col gap-1">
+        <h3 className="font-heading text-lg font-medium">API keys</h3>
         <p className="text-sm text-muted-foreground">
-          Bring your own API keys to use with different AI providers. Your keys
-          are stored securely with end to end encryption.
+          Bring your own API keys for different AI providers. Keys are stored
+          with end-to-end encryption.
         </p>
       </div>
 
-      {/* Provider Cards */}
-      <div>
-        <h4 className="text-sm font-medium mb-3">Select Provider</h4>
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-2 sm:gap-3">
+      <FieldSet className="min-w-0 border-0 p-0">
+        <FieldLegend variant="label" className="mb-3 px-0">
+          Provider
+        </FieldLegend>
+        <ToggleGroup
+          variant="outline"
+          spacing={0}
+          value={[selectedProvider]}
+          onValueChange={handleProviderValueChange}
+          className="flex w-full flex-wrap gap-2"
+        >
           {PROVIDERS.map((provider) => {
             const Icon = provider.icon;
             const hasKey = userApiKeysStatus[provider.id];
-            const isSelected = selectedProvider === provider.id;
-
             return (
-              <button
+              <ToggleGroupItem
                 key={provider.id}
-                onClick={() => handleProviderSelect(provider.id)}
+                value={provider.id}
+                aria-label={`${provider.name}${hasKey ? ", key on file" : ""}`}
                 className={cn(
-                  "relative p-2 sm:p-3 border rounded-lg flex flex-col items-center gap-1.5 sm:gap-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors",
-                  isSelected
-                    ? "border-orange-500 bg-orange-50 dark:bg-orange-950/20"
-                    : "border-gray-200 dark:border-gray-700"
+                  "relative flex h-auto min-h-24 w-[calc(50%-0.25rem)] flex-col gap-2 py-3 sm:w-[calc(33.333%-0.34rem)] md:w-[calc(25%-0.375rem)] lg:w-[calc(20%-0.4rem)]",
+                  "data-[state=on]:border-primary data-[state=on]:bg-primary/5 data-[state=on]:ring-2 data-[state=on]:ring-primary/25"
                 )}
               >
-                <div className="w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center">
-                  <Icon className="w-6 h-6 sm:w-8 sm:h-8" />
+                {hasKey && (
+                  <span
+                    className="absolute -top-1 -right-1 size-2.5 rounded-full bg-primary ring-2 ring-background"
+                    aria-hidden
+                  />
+                )}
+                <div className="flex size-10 items-center justify-center">
+                  <Icon aria-hidden className="size-10" />
                 </div>
-                <span className="text-[10px] sm:text-xs font-medium text-center leading-tight">
+                <span className="text-center text-[10px] font-medium leading-tight sm:text-xs">
                   {provider.name}
                 </span>
-                {hasKey && (
-                  <div className="absolute -top-1 -right-1 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-500 rounded-full" />
-                )}
-              </button>
+              </ToggleGroupItem>
             );
           })}
-        </div>
-      </div>
+        </ToggleGroup>
+      </FieldSet>
 
-      {/* Selected Provider Details */}
       {selectedProviderData && (
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
-                <selectedProviderData.icon className="w-8 h-8 sm:w-10 sm:h-10" />
-              </div>
-              <div>
-                <h4 className="font-medium text-sm sm:text-base">
-                  {selectedProviderData.name}
-                </h4>
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  {userApiKeysStatus[selectedProvider]
-                    ? "Key configured"
-                    : "No key configured"}
-                </p>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                window.open(selectedProviderData.getKeyUrl, "_blank")
-              }
-              className="text-xs w-full sm:w-auto"
-            >
-              <ExternalLink className="w-3 h-3 mr-1" />
-              Get Key
-            </Button>
-          </div>
-
-          {/* API Key Input */}
-          <div className="space-y-3">
-            <div className="relative">
-              <Input
-                type="password"
-                placeholder={selectedProviderData.placeholder}
-                value={currentKeyInput}
-                onChange={(e) => handleKeyInputChange(e.target.value)}
-                className="pr-12"
-              />
-            </div>
-
-            {/* Save Button */}
-            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2">
-              {userApiKeysStatus[selectedProvider] && (
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleDeleteKey}
-                  disabled={isDeleting}
-                  className="bg-red-500 hover:bg-red-600 text-white w-full sm:w-auto"
-                  aria-label="Delete API key"
-                >
-                  Delete Key
-                </Button>
-              )}
-              <Button
-                onClick={handleSaveApiKey}
-                disabled={!hasChanges}
-                className="bg-orange-500 hover:bg-orange-600 text-white disabled:opacity-50 w-full sm:w-auto"
-              >
-                Save Key
-              </Button>
-            </div>
-          </div>
-        </div>
+        <ProviderKeyCard
+          selectedProviderData={selectedProviderData}
+          selectedProvider={selectedProvider}
+          userApiKeysStatus={userApiKeysStatus}
+          currentKeyInput={currentKeyInput}
+          hasChanges={hasChanges}
+          isDeleting={isDeleting}
+          onKeyInputChange={handleKeyInputChange}
+          onSave={handleSaveApiKey}
+          onDelete={handleDeleteKey}
+        />
       )}
     </div>
   );
 };
+
+type ProviderKeyCardProps = {
+  selectedProviderData: (typeof PROVIDERS)[number];
+  selectedProvider: string;
+  userApiKeysStatus: Record<string, boolean | undefined>;
+  currentKeyInput: string;
+  hasChanges: boolean;
+  isDeleting: boolean;
+  onKeyInputChange: (value: string) => void;
+  onSave: () => void;
+  onDelete: () => void;
+};
+
+const ProviderKeyCard = React.memo(function ProviderKeyCard({
+  selectedProviderData,
+  selectedProvider,
+  userApiKeysStatus,
+  currentKeyInput,
+  hasChanges,
+  isDeleting,
+  onKeyInputChange,
+  onSave,
+  onDelete,
+}: ProviderKeyCardProps) {
+  const ProviderIcon = selectedProviderData.icon;
+
+  return (
+    <Card size="sm" className="shadow-sm">
+      <CardHeader className="gap-3">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex size-12 shrink-0 items-center justify-center">
+              <ProviderIcon aria-hidden className="size-12" />
+            </div>
+            <div className="min-w-0 flex flex-col gap-1">
+              <CardTitle>{selectedProviderData.name}</CardTitle>
+              <CardDescription>
+                {userApiKeysStatus[selectedProvider]
+                  ? "Key configured for this provider."
+                  : "No key on file yet."}
+              </CardDescription>
+            </div>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full shrink-0 sm:w-auto"
+            onClick={() =>
+              window.open(selectedProviderData.getKeyUrl, "_blank")
+            }
+          >
+            <HugeiconsIcon
+              icon={LinkSquare02Icon}
+              strokeWidth={2}
+              data-icon="inline-start"
+            />
+            Get key
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <FieldGroup>
+          <Field>
+            <FieldLabel htmlFor={API_KEY_INPUT_ID}>API key</FieldLabel>
+            <Input
+              id={API_KEY_INPUT_ID}
+              type="password"
+              autoComplete="off"
+              placeholder={selectedProviderData.placeholder}
+              value={currentKeyInput}
+              onChange={(e) => onKeyInputChange(e.target.value)}
+            />
+            <FieldDescription>
+              Paste your secret key. It is encrypted before storage.
+            </FieldDescription>
+          </Field>
+        </FieldGroup>
+      </CardContent>
+      <CardFooter className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
+        {userApiKeysStatus[selectedProvider] && (
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            onClick={onDelete}
+            disabled={isDeleting}
+            className="w-full gap-2 sm:w-auto"
+            aria-label="Delete API key"
+          >
+            {isDeleting ? (
+              <>
+                <Spinner className="size-4" />
+                Deleting…
+              </>
+            ) : (
+              "Delete key"
+            )}
+          </Button>
+        )}
+        <Button
+          type="button"
+          onClick={onSave}
+          disabled={!hasChanges}
+          className="w-full sm:ml-auto sm:w-auto"
+        >
+          Save key
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+});

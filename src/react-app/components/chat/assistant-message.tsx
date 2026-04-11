@@ -66,7 +66,7 @@ export const AssistantMessage = ({
       return MODELS.find((model) => model.id === metadata.model);
     }
     return;
-  }, [metadata?.model]);
+  }, [metadata]);
   const sources = parts?.filter((part) => part.type === "source-url") || [];
 
   return (
@@ -190,7 +190,7 @@ export const AssistantMessage = ({
             <MessageAction
               tooltip={copied ? "Copied!" : "Copy text"}
               side="bottom"
-              delayDuration={0}
+              delay={0}
             >
               <button
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-transparent transition"
