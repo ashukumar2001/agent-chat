@@ -2,7 +2,7 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import { Context } from "hono";
 import { auth } from "./lib/auth";
 export const createContext = async (
-    c: Context<{ Bindings: Env }, "/trpc/*", {}>
+    c: Context<{ Bindings: Env }, "/trpc/*">
 ) => {
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
     return ({

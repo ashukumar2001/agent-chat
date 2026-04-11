@@ -3,64 +3,6 @@ import { z } from "zod";
 
 import { WebSearchItem, WebSearchSchema } from "./schema";
 
-export const webSearchDDGTool = tool({
-  description:
-    "Search the web using DuckDuckGo Instant Answer (no key required).",
-  inputSchema: z.object({
-    query: z.string().min(1),
-    limit: z.number().min(1).max(20).default(5),
-    lang: z.string().optional(),
-  }),
-  outputSchema: WebSearchSchema,
-  execute: async ({ query, limit, lang }) => {
-    const url = `https://api.duckduckgo.com/?${new URLSearchParams({
-      q: query,
-      format: "json",
-      no_redirect: "1",
-      no_html: "1",
-      t: "ai-tools-registry",
-      kl: lang ? `${lang}-en` : "",
-    }).toString()}`;
-
-    console.log(url);
-
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`DuckDuckGo API failed: ${res.status}`);
-    const data = DDGResponseSchema.parse(await res.json());
-
-    const flatten = (
-      items: DDGRelated[] = [],
-      acc: DDGTopic[] = []
-    ): DDGTopic[] => {
-      for (const it of items) {
-        if ((it as any).Topics) acc = flatten((it as any).Topics, acc);
-        else if ((it as any).FirstURL && (it as any).Text) acc.push(it as any);
-      }
-      return acc;
-    };
-
-    const related = flatten(data.RelatedTopics);
-    const results: WebSearchItem[] = (related || [])
-      .slice(0, limit)
-      .map((r) => {
-        let hostname: string | undefined;
-        try {
-          hostname = new URL(r.FirstURL).hostname;
-        } catch {
-          hostname = undefined;
-        }
-        return {
-          title: r.Text,
-          url: r.FirstURL,
-          snippet: undefined,
-          source: hostname || "DuckDuckGo",
-        };
-      });
-
-    return { query, results };
-  },
-});
-
 export const DDGTopicSchema = z
   .object({
     FirstURL: z.string().url(),
@@ -93,5 +35,70 @@ export const DDGResponseSchema = z
   .loose();
 
 export type DDGResponse = z.infer<typeof DDGResponseSchema>;
+
+function flattenRelatedTopics(
+  items: DDGRelated[] = [],
+  acc: DDGTopic[] = []
+): DDGTopic[] {
+  for (const it of items) {
+    const asGroup = DDGRelatedGroupSchema.safeParse(it);
+    if (asGroup.success) {
+      flattenRelatedTopics(asGroup.data.Topics as DDGRelated[], acc);
+      continue;
+    }
+    const asTopic = DDGTopicSchema.safeParse(it);
+    if (asTopic.success) {
+      acc.push(asTopic.data);
+    }
+  }
+  return acc;
+}
+
+export const webSearchDDGTool = tool({
+  description:
+    "Search the web using DuckDuckGo Instant Answer (no key required).",
+  inputSchema: z.object({
+    query: z.string().min(1),
+    limit: z.number().min(1).max(20).default(5),
+    lang: z.string().optional(),
+  }),
+  outputSchema: WebSearchSchema,
+  execute: async ({ query, limit, lang }) => {
+    const url = `https://api.duckduckgo.com/?${new URLSearchParams({
+      q: query,
+      format: "json",
+      no_redirect: "1",
+      no_html: "1",
+      t: "ai-tools-registry",
+      kl: lang ? `${lang}-en` : "",
+    }).toString()}`;
+
+    console.log(url);
+
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`DuckDuckGo API failed: ${res.status}`);
+    const data = DDGResponseSchema.parse(await res.json());
+
+    const related = flattenRelatedTopics(data.RelatedTopics);
+    const results: WebSearchItem[] = (related || [])
+      .slice(0, limit)
+      .map((r) => {
+        let hostname: string | undefined;
+        try {
+          hostname = new URL(r.FirstURL).hostname;
+        } catch {
+          hostname = undefined;
+        }
+        return {
+          title: r.Text,
+          url: r.FirstURL,
+          snippet: undefined,
+          source: hostname || "DuckDuckGo",
+        };
+      });
+
+    return { query, results };
+  },
+});
 
 export type WebSearchToolInvocation = UIToolInvocation<typeof webSearchDDGTool>;

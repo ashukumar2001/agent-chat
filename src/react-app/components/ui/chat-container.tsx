@@ -7,10 +7,12 @@ const useAutoScroll = (
 ) => {
   const [autoScrollEnabled, setAutoScrollEnabled] = useState(true);
   const lastScrollTopRef = useRef(0);
-  const autoScrollingRef = useRef(false);
+  /** Ignores user-driven scroll events while a programmatic scroll is in flight */
+  const programmaticScrollRef = useRef(false);
   const [newMessageAdded, setNewMessageAdded] = useState(false);
   const prevChildrenCountRef = useRef(0);
-  const scrollTriggeredRef = useRef(false);
+  const [isScrolling, setIsScrolling] = useState(false);
+  const [scrollTriggered, setScrollTriggered] = useState(false);
 
   const isAtBottom = useCallback((element: HTMLDivElement) => {
     const { scrollTop, scrollHeight, clientHeight } = element;
@@ -22,8 +24,9 @@ const useAutoScroll = (
       const container = containerRef.current;
       if (!container) return;
 
-      autoScrollingRef.current = true;
-      scrollTriggeredRef.current = true;
+      programmaticScrollRef.current = true;
+      setIsScrolling(true);
+      setScrollTriggered(true);
 
       const targetScrollTop = container.scrollHeight - container.clientHeight;
 
@@ -32,10 +35,15 @@ const useAutoScroll = (
         behavior: behavior,
       });
 
+      const endProgrammaticScroll = () => {
+        programmaticScrollRef.current = false;
+        setIsScrolling(false);
+        setScrollTriggered(false);
+      };
+
       const checkScrollEnd = () => {
         if (Math.abs(container.scrollTop - targetScrollTop) < 5) {
-          autoScrollingRef.current = false;
-          scrollTriggeredRef.current = false;
+          endProgrammaticScroll();
           return;
         }
 
@@ -45,14 +53,12 @@ const useAutoScroll = (
       requestAnimationFrame(checkScrollEnd);
 
       const safetyTimeout = setTimeout(() => {
-        autoScrollingRef.current = false;
-        scrollTriggeredRef.current = false;
+        endProgrammaticScroll();
       }, 500);
 
       try {
         const handleScrollEnd = () => {
-          autoScrollingRef.current = false;
-          scrollTriggeredRef.current = false;
+          endProgrammaticScroll();
           clearTimeout(safetyTimeout);
           container.removeEventListener("scrollend", handleScrollEnd);
         };
@@ -76,7 +82,7 @@ const useAutoScroll = (
     lastScrollTopRef.current = container.scrollTop;
 
     const handleScroll = () => {
-      if (autoScrollingRef.current) return;
+      if (programmaticScrollRef.current) return;
 
       const currentScrollTop = container.scrollTop;
 
@@ -135,8 +141,8 @@ const useAutoScroll = (
   return {
     autoScrollEnabled,
     scrollToBottom,
-    isScrolling: autoScrollingRef.current,
-    scrollTriggered: scrollTriggeredRef.current,
+    isScrolling,
+    scrollTriggered,
     newMessageAdded,
     setNewMessageAdded,
     prevChildrenCountRef,

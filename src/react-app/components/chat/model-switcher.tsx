@@ -138,21 +138,23 @@ export function ModelSwitcher({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="justify-between rounded-full"
-          disabled={isLoadingUserPreferences}
-        >
-          {currentProvider?.icon && (
-            <currentProvider.icon className="w-4 h-4" />
-          )}
-          {currentModel?.name || "Select model..."}
+      <PopoverTrigger
+        render={
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="justify-between rounded-full"
+            disabled={isLoadingUserPreferences}
+          />
+        }
+      >
+        {currentProvider?.icon && (
+          <currentProvider.icon className="w-4 h-4" />
+        )}
+        {currentModel?.name || "Select model..."}
 
-          <ChevronsUpDown className="opacity-50" />
-        </Button>
+        <ChevronsUpDown className="opacity-50" />
       </PopoverTrigger>
       <PopoverContent className="w-[360px] p-0" align="start">
         <Command>

@@ -15,7 +15,13 @@ import {
 import { useChats } from "@/hooks/use-chats";
 import { useModal } from "@/hooks/use-modal";
 import { authClient } from "@/lib/auth-client";
-import { LogInIcon, MoreHorizontal, TrashIcon } from "lucide-react";
+import {
+  LogInIcon,
+  MessageSquare,
+  MoreHorizontal,
+  SquarePen,
+  TrashIcon,
+} from "lucide-react";
 import { Button } from "../ui/button";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useChatSession } from "@/hooks/use-chat-session";
@@ -23,12 +29,21 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { Chat } from "@/types/misc";
 import { useChatUtils } from "@/hooks/use-chat-utils";
 import { UsageIndicator } from "@/components/usage";
+import { cn } from "@/lib/utils";
 
 // Types
 type GroupedChats = {
@@ -70,6 +85,12 @@ function groupChatsByDate(chats: Chat[] | undefined): GroupedChats {
   return grouped;
 }
 
+function groupedChatCount(grouped: GroupedChats): number {
+  return (
+    grouped.Today.length + grouped.Yesterday.length + grouped.Older.length
+  );
+}
+
 // Memoized Chat Item Component
 interface ChatItemProps {
   chat: Chat;
@@ -89,37 +110,37 @@ const ChatItem = memo(function ChatItem({
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
-        className={`flex items-center justify-between group/chat transition-all duration-200 rounded-lg px-3 py-2 ${
-          isActive
-            ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm font-medium"
-            : "hover:bg-sidebar-accent/50 text-muted-foreground hover:text-foreground"
-        }`}
         isActive={isActive}
-        asChild
-      >
-        <Link
-          to="/chat/$chatId"
-          params={{ chatId: chat.id }}
-          className="flex-1 text-left"
-        >
-          <span className="truncate">{chat.name}</span>
-        </Link>
-      </SidebarMenuButton>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <SidebarMenuAction showOnHover className="hover:bg-background/50">
-            <MoreHorizontal className="h-4 w-4" />
-            <span className="sr-only">More</span>
-          </SidebarMenuAction>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-fit" align="start">
-          <DropdownMenuItem
-            onSelect={handleDelete}
-            className="text-destructive focus:text-destructive"
+        tooltip={chat.name ?? undefined}
+        render={
+          <Link
+            to="/chat/$chatId"
+            params={{ chatId: chat.id }}
+            className="flex min-w-0 flex-1 items-center gap-2"
           >
-            <TrashIcon className="mr-2 h-4 w-4" />
-            <span>Delete</span>
-          </DropdownMenuItem>
+            <span className="truncate">{chat.name}</span>
+          </Link>
+        }
+      />
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <SidebarMenuAction
+              showOnHover
+              className="text-sidebar-foreground/80"
+            >
+              <MoreHorizontal />
+              <span className="sr-only">Chat actions</span>
+            </SidebarMenuAction>
+          }
+        />
+        <DropdownMenuContent className="min-w-40" align="start">
+          <DropdownMenuGroup>
+            <DropdownMenuItem variant="destructive" onClick={handleDelete}>
+              <TrashIcon />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
     </SidebarMenuItem>
@@ -143,8 +164,8 @@ const ChatGroup = memo(function ChatGroup({
   if (chats.length === 0) return null;
 
   return (
-    <SidebarGroup>
-      <SidebarGroupLabel className="text-xs font-medium text-muted-foreground/70 px-2 mb-2">
+    <SidebarGroup className="gap-1 p-2">
+      <SidebarGroupLabel className="h-7 px-2 text-[0.65rem] font-semibold uppercase tracking-wider text-muted-foreground">
         {label}
       </SidebarGroupLabel>
       <SidebarMenu>
@@ -181,8 +202,10 @@ const ChatList = memo(
       [groupedChats]
     );
 
+    const hasChats = groupedChatCount(groupedChats) > 0;
+
     return (
-      <>
+      <div className="flex min-h-0 flex-1 flex-col gap-1">
         {groups.map(({ label, chats }) => (
           <ChatGroup
             key={label}
@@ -193,13 +216,26 @@ const ChatList = memo(
           />
         ))}
         {isLoading && (
-          <div className="space-y-2 px-2">
-            {Array.from({ length: 3 }).map((_, index) => (
+          <div className="flex flex-col gap-2 px-3 py-2">
+            {Array.from({ length: 4 }).map((_, index) => (
               <SidebarMenuSkeleton key={index} />
             ))}
           </div>
         )}
-      </>
+        {!isLoading && !hasChats && (
+          <Empty className="mx-2 my-3 flex-none rounded-2xl border border-dashed border-sidebar-border/80 bg-sidebar-accent/5 p-6">
+            <EmptyHeader className="gap-3">
+              <EmptyMedia variant="icon">
+                <MessageSquare />
+              </EmptyMedia>
+              <EmptyTitle className="text-base">No chats yet</EmptyTitle>
+              <EmptyDescription>
+                Create a new chat to see it listed here.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        )}
+      </div>
     );
   }
 );
@@ -213,15 +249,35 @@ const SidebarHeaderContent = memo(function SidebarHeaderContent() {
   }, [navigate]);
 
   return (
-    <SidebarHeader className="flex-col flex p-4">
-      <h1 className="text-2xl font-bold group-data-[state=collapsed]:opacity-0 h-8 flex items-center transition-all group-data-[state=expanded]:opacity-100 group-data-[state=expanded]:delay-150 bg-linear-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-        Eddy
-      </h1>
+    <SidebarHeader
+      className={cn(
+        "gap-3 border-b border-sidebar-border/60 bg-sidebar-accent/5 px-3 py-4",
+        "group-data-[state=collapsed]:border-b-0 group-data-[state=collapsed]:bg-transparent group-data-[state=collapsed]:p-2"
+      )}
+    >
+      <div
+        className={cn(
+          "flex min-h-8 items-center px-0.5",
+          "group-data-[state=collapsed]:justify-center"
+        )}
+      >
+        <h1
+          className={cn(
+            "font-heading text-xl font-semibold tracking-tight",
+            "bg-linear-to-r from-primary to-primary/60 bg-clip-text text-transparent",
+            "transition-opacity duration-200",
+            "group-data-[state=collapsed]:sr-only"
+          )}
+        >
+          Eddy
+        </h1>
+      </div>
       <Button
-        className="w-full justify-start bg-linear-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-primary-foreground shadow-sm transition-all duration-300"
+        className="w-full shadow-sm"
         onClick={handleNewChat}
       >
-        New Chat
+        <SquarePen data-icon="inline-start" />
+        New chat
       </Button>
     </SidebarHeader>
   );
@@ -244,18 +300,22 @@ const UserProfile = memo(function UserProfile({
   return (
     <Button
       variant="ghost"
-      className="justify-start px-2 h-14 w-full hover:bg-sidebar-accent/50 transition-colors"
+      className="h-auto min-h-14 w-full justify-start gap-3 px-2 py-2.5 hover:bg-sidebar-accent"
       onClick={onOpenSettings}
     >
-      <Avatar className="h-9 w-9 border border-sidebar-border">
-        <AvatarImage src={user.image ?? undefined} />
-        <AvatarFallback>{user.name?.charAt(0)}</AvatarFallback>
+      <Avatar className="size-9 ring-1 ring-sidebar-border">
+        <AvatarImage src={user.image ?? undefined} alt="" />
+        <AvatarFallback className="text-xs font-medium">
+          {user.name?.charAt(0) ?? "?"}
+        </AvatarFallback>
       </Avatar>
-      <div className="flex flex-col items-start w-full ml-2">
-        <p className="text-sm font-medium leading-none">{user.name}</p>
+      <div className="flex min-w-0 flex-1 flex-col items-start gap-0.5 text-left">
+        <p className="w-full truncate text-sm font-medium leading-none">
+          {user.name}
+        </p>
         <p
           title={user.email ?? undefined}
-          className="text-xs text-muted-foreground truncate max-w-[140px] mt-1"
+          className="w-full truncate text-xs text-muted-foreground"
         >
           {user.email}
         </p>
@@ -272,12 +332,12 @@ interface LoginButtonProps {
 const LoginButton = memo(function LoginButton({ onLogin }: LoginButtonProps) {
   return (
     <Button
-      variant="ghost"
-      className="justify-center w-full bg-sidebar-accent/10 hover:bg-sidebar-accent/20"
+      variant="outline"
+      className="w-full border-sidebar-border bg-sidebar-accent/10 hover:bg-sidebar-accent/20"
       onClick={onLogin}
     >
-      <LogInIcon className="mr-2 h-4 w-4" />
-      <span>Login</span>
+      <LogInIcon data-icon="inline-start" />
+      Log in
     </Button>
   );
 });
@@ -305,9 +365,9 @@ const SidebarFooterContent = memo(function SidebarFooterContent({
   }, [openModal]);
 
   return (
-    <SidebarFooter className="border-t border-sidebar-border/50 p-4 bg-linear-to-t from-sidebar-accent/10 to-transparent space-y-3">
+    <SidebarFooter className="gap-3 border-t border-sidebar-border/60 bg-sidebar-accent/5 px-3 py-3">
       {user && (
-        <div className="flex justify-center">
+        <div className="flex justify-center px-1">
           <UsageIndicator />
         </div>
       )}
@@ -340,10 +400,10 @@ export function AppSidebar() {
   return (
     <Sidebar
       collapsible="offcanvas"
-      className="bg-linear-to-b from-sidebar to-sidebar/90 border-r-0"
+      className="border-r border-sidebar-border/80"
     >
       <SidebarHeaderContent />
-      <SidebarContent className="px-2">
+      <SidebarContent className="gap-0 px-0 py-1">
         <ChatList
           groupedChats={groupedChats}
           activeChatId={chatId}

@@ -6,6 +6,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { isValidElement } from "react";
 import { Markdown } from "./markdown";
 
 export type MessageProps = {
@@ -23,7 +24,8 @@ export type MessageAvatarProps = {
   src: string;
   alt: string;
   fallback?: string;
-  delayMs?: number;
+  /** Delay before showing fallback (ms). */
+  delay?: number;
   className?: string;
 };
 
@@ -31,14 +33,14 @@ const MessageAvatar = ({
   src,
   alt,
   fallback,
-  delayMs,
+  delay,
   className,
 }: MessageAvatarProps) => {
   return (
     <Avatar className={cn("h-8 w-8 shrink-0", className)}>
       <AvatarImage src={src} alt={alt} />
       {fallback && (
-        <AvatarFallback delayMs={delayMs}>{fallback}</AvatarFallback>
+        <AvatarFallback delay={delay}>{fallback}</AvatarFallback>
       )}
     </Avatar>
   );
@@ -96,19 +98,33 @@ export type MessageActionProps = {
   tooltip: React.ReactNode;
   children: React.ReactNode;
   side?: "top" | "bottom" | "left" | "right";
-} & React.ComponentProps<typeof Tooltip>;
+  delay?: number;
+  closeDelay?: number;
+} & Omit<React.ComponentProps<typeof Tooltip>, "children">;
 
 const MessageAction = ({
   tooltip,
   children,
   className,
   side = "top",
+  delay,
+  closeDelay,
   ...props
 }: MessageActionProps) => {
+  const trigger = isValidElement(children) ? (
+    children
+  ) : (
+    <span className="inline-flex">{children}</span>
+  );
+
   return (
     <TooltipProvider>
       <Tooltip {...props}>
-        <TooltipTrigger asChild>{children}</TooltipTrigger>
+        <TooltipTrigger
+          closeDelay={closeDelay}
+          delay={delay}
+          render={trigger}
+        />
         <TooltipContent side={side} className={className}>
           {tooltip}
         </TooltipContent>
