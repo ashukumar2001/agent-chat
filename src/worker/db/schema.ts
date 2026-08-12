@@ -5,6 +5,7 @@ import {
   integer,
   primaryKey,
   index,
+  uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 
 // Dodo Payments subscription statuses
@@ -194,21 +195,27 @@ export const customers = sqliteTable("customers", {
 });
 
 // Usage tracking table for tracking requests and tokens per user per billing period
-export const usage = sqliteTable("usage", {
-  id: text("id").primaryKey(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  periodStart: integer("period_start", { mode: "timestamp" }).notNull(),
-  periodEnd: integer("period_end", { mode: "timestamp" }).notNull(),
-  fastModelRequests: integer("fast_model_requests").notNull().default(0),
-  premiumModelRequests: integer("premium_model_requests").notNull().default(0),
-  inputTokens: integer("input_tokens").notNull().default(0),
-  outputTokens: integer("output_tokens").notNull().default(0),
-  createdAt: integer("created_at", { mode: "timestamp" }).default(
-    sql`(unixepoch())`
-  ),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).default(
-    sql`(unixepoch())`
-  ),
-});
+export const usage = sqliteTable(
+  "usage",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    periodStart: integer("period_start", { mode: "timestamp" }).notNull(),
+    periodEnd: integer("period_end", { mode: "timestamp" }).notNull(),
+    fastModelRequests: integer("fast_model_requests").notNull().default(0),
+    premiumModelRequests: integer("premium_model_requests").notNull().default(0),
+    inputTokens: integer("input_tokens").notNull().default(0),
+    outputTokens: integer("output_tokens").notNull().default(0),
+    createdAt: integer("created_at", { mode: "timestamp" }).default(
+      sql`(unixepoch())`
+    ),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).default(
+      sql`(unixepoch())`
+    ),
+  },
+  (table) => [
+    uniqueIndex("usage_user_period_start_idx").on(table.userId, table.periodStart),
+  ]
+);

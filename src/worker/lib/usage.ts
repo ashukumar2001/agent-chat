@@ -4,9 +4,10 @@
  * Handles tracking and checking usage limits for users
  */
 
+import { env } from "cloudflare:workers";
 import { db } from "../db/db";
 import { usage, subscriptions } from "../db/schema";
-import { eq, and, gte, lte, desc } from "drizzle-orm";
+import { eq, and, gte, lte, desc, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import {
   PLANS,
@@ -15,7 +16,15 @@ import {
   getPlanByProductId,
   getPeriodBoundaries,
   type PlanConfig,
+  type SubscriptionPeriod,
 } from "./plans";
+
+/**
+ * Request quota is only billed in production so local `bun run dev`
+ * and the deployed development env can iterate without burning limits.
+ */
+export const isUsageEnforced = (): boolean =>
+  env.CLOUDFLARE_ENV === "production";
 
 export interface UsageRecord {
   id: string;
@@ -58,43 +67,54 @@ export interface UsageStats {
 }
 
 /**
- * Get the user's current plan based on their subscription
+ * Fetch the user's active (non-expired) subscription, if any.
  */
-export const getUserPlan = async (userId: string): Promise<PlanConfig> => {
-  // Get the most recent subscription
-  const userSubscription = await db
+const getActiveSubscription = async (userId: string) => {
+  const userSubscriptions = await db
     .select()
     .from(subscriptions)
     .where(eq(subscriptions.userId, userId))
     .orderBy(desc(subscriptions.createdAt))
-    .limit(1);
+    .limit(10);
 
-  if (!userSubscription.length) {
-    return PLANS.free;
-  }
-
-  const sub = userSubscription[0];
-  const isActive = sub.status === "active";
-  const isExpired =
-    sub.nextBillingDate && new Date(sub.nextBillingDate) < new Date();
-
-  if (!isActive || isExpired) {
-    return PLANS.free;
-  }
-
-  return getPlanByProductId(sub.productId);
+  const now = new Date();
+  return (
+    userSubscriptions.find((sub) => {
+      if (sub.status !== "active") return false;
+      if (sub.nextBillingDate && new Date(sub.nextBillingDate) < now) {
+        return false;
+      }
+      return true;
+    }) ?? null
+  );
 };
 
 /**
- * Get or create usage record for the current period
+ * Get the user's current plan based on their subscription.
+ * Prioritizes an active subscription over newer non-active rows (e.g. a
+ * pending or cancelled checkout that would otherwise shadow it).
+ */
+export const getUserPlan = async (userId: string): Promise<PlanConfig> => {
+  const activeSubscription = await getActiveSubscription(userId);
+  if (!activeSubscription) {
+    return PLANS.free;
+  }
+  return getPlanByProductId(activeSubscription.productId);
+};
+
+/**
+ * Get or create usage record(s) for the current period, aggregating counts
+ * across any records that fall in the window. Inserts are conflict-safe so
+ * concurrent callers cannot produce duplicate rows for the same period.
  */
 export const getOrCreateUsageRecord = async (
   userId: string,
   plan: PlanConfig,
+  subscription?: SubscriptionPeriod | null,
 ): Promise<UsageRecord> => {
-  const { start, end } = getPeriodBoundaries(plan);
+  const { start, end } = getPeriodBoundaries(plan, subscription);
 
-  // Try to find existing record for this period
+  // Find all records covering this period
   const existingRecords = await db
     .select()
     .from(usage)
@@ -104,40 +124,43 @@ export const getOrCreateUsageRecord = async (
         gte(usage.periodStart, start),
         lte(usage.periodEnd, end),
       ),
-    )
-    .limit(1);
+    );
 
-  if (existingRecords.length > 0) {
-    const record = existingRecords[0];
-    return {
-      id: record.id,
-      userId: record.userId,
-      periodStart: record.periodStart,
-      periodEnd: record.periodEnd,
-      fastModelRequests: record.fastModelRequests,
-      premiumModelRequests: record.premiumModelRequests,
-      inputTokens: record.inputTokens,
-      outputTokens: record.outputTokens,
+  if (existingRecords.length === 0) {
+    const newRecord = {
+      id: nanoid(),
+      userId,
+      periodStart: start,
+      periodEnd: end,
+      fastModelRequests: 0,
+      premiumModelRequests: 0,
+      inputTokens: 0,
+      outputTokens: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
+
+    await db.insert(usage).values(newRecord).onConflictDoNothing();
+    return newRecord;
   }
 
-  // Create new record for this period
-  const newRecord = {
-    id: nanoid(),
+  const first = existingRecords[0];
+  return {
+    id: first.id,
     userId,
-    periodStart: start,
-    periodEnd: end,
-    fastModelRequests: 0,
-    premiumModelRequests: 0,
-    inputTokens: 0,
-    outputTokens: 0,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    periodStart: first.periodStart,
+    periodEnd: first.periodEnd,
+    fastModelRequests: existingRecords.reduce(
+      (sum, r) => sum + r.fastModelRequests,
+      0,
+    ),
+    premiumModelRequests: existingRecords.reduce(
+      (sum, r) => sum + r.premiumModelRequests,
+      0,
+    ),
+    inputTokens: existingRecords.reduce((sum, r) => sum + r.inputTokens, 0),
+    outputTokens: existingRecords.reduce((sum, r) => sum + r.outputTokens, 0),
   };
-
-  await db.insert(usage).values(newRecord);
-
-  return newRecord;
 };
 
 /**
@@ -150,8 +173,8 @@ export const checkUsageLimit = async (
 ): Promise<UsageCheckResult> => {
   const plan = await getUserPlan(userId);
 
-  // If user has their own API key, allow unlimited usage
-  if (hasOwnApiKey) {
+  // Own API keys, and any non-production env, skip quota and model gates
+  if (hasOwnApiKey || !isUsageEnforced()) {
     return {
       allowed: true,
       plan,
@@ -167,7 +190,11 @@ export const checkUsageLimit = async (
     };
   }
 
-  const usageRecord = await getOrCreateUsageRecord(userId, plan);
+  const usageRecord = await getOrCreateUsageRecord(
+    userId,
+    plan,
+    await getActiveSubscription(userId),
+  );
   const isPremium = isPremiumModel(modelId);
 
   const currentUsage = {
@@ -214,23 +241,37 @@ export const checkUsageLimit = async (
 
 /**
  * Add token counts for a completed model call (no request-quota change).
+ * Uses atomic SQL increments over the whole period window, so concurrent
+ * requests can't lose updates (or be missed when records were duplicated).
  */
 export const incrementTokenUsage = async (
   userId: string,
   inputTokens: number = 0,
   outputTokens: number = 0,
 ): Promise<void> => {
-  const plan = await getUserPlan(userId);
-  const usageRecord = await getOrCreateUsageRecord(userId, plan);
+  if (!isUsageEnforced()) {
+    return;
+  }
 
+  const plan = await getUserPlan(userId);
+  const subscription = await getActiveSubscription(userId);
+  await getOrCreateUsageRecord(userId, plan, subscription);
+
+  const { start, end } = getPeriodBoundaries(plan, subscription);
   await db
     .update(usage)
     .set({
-      inputTokens: usageRecord.inputTokens + inputTokens,
-      outputTokens: usageRecord.outputTokens + outputTokens,
+      inputTokens: sql`${usage.inputTokens} + ${inputTokens}`,
+      outputTokens: sql`${usage.outputTokens} + ${outputTokens}`,
       updatedAt: new Date(),
     })
-    .where(eq(usage.id, usageRecord.id));
+    .where(
+      and(
+        eq(usage.userId, userId),
+        gte(usage.periodStart, start),
+        lte(usage.periodEnd, end),
+      ),
+    );
 };
 
 /**
@@ -240,22 +281,32 @@ export const incrementRequestQuota = async (
   userId: string,
   modelId: string,
 ): Promise<void> => {
+  if (!isUsageEnforced()) {
+    return;
+  }
+
   const plan = await getUserPlan(userId);
-  const usageRecord = await getOrCreateUsageRecord(userId, plan);
+  const subscription = await getActiveSubscription(userId);
+  await getOrCreateUsageRecord(userId, plan, subscription);
+
+  const { start, end } = getPeriodBoundaries(plan, subscription);
   const isPremium = isPremiumModel(modelId);
 
   await db
     .update(usage)
     .set({
-      fastModelRequests: isPremium
-        ? usageRecord.fastModelRequests
-        : usageRecord.fastModelRequests + 1,
-      premiumModelRequests: isPremium
-        ? usageRecord.premiumModelRequests + 1
-        : usageRecord.premiumModelRequests,
+      ...(isPremium
+        ? { premiumModelRequests: sql`${usage.premiumModelRequests} + 1` }
+        : { fastModelRequests: sql`${usage.fastModelRequests} + 1` }),
       updatedAt: new Date(),
     })
-    .where(eq(usage.id, usageRecord.id));
+    .where(
+      and(
+        eq(usage.userId, userId),
+        gte(usage.periodStart, start),
+        lte(usage.periodEnd, end),
+      ),
+    );
 };
 
 /**
@@ -276,7 +327,8 @@ export const incrementUsage = async (
  */
 export const getUsageStats = async (userId: string): Promise<UsageStats> => {
   const plan = await getUserPlan(userId);
-  const usageRecord = await getOrCreateUsageRecord(userId, plan);
+  const subscription = await getActiveSubscription(userId);
+  const usageRecord = await getOrCreateUsageRecord(userId, plan, subscription);
 
   return {
     fastModelRequests: usageRecord.fastModelRequests,

@@ -15,6 +15,13 @@
       "when": 1767978804892,
       "tag": "0001_awesome_mentallo",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1786510865614,
+      "tag": "0002_slippery_dorian_gray",
+      "breakpoints": true
     }
   ]
 }

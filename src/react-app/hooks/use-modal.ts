@@ -10,13 +10,15 @@ export type SettingsSectionType = (typeof SETTINGS_SECTION_TYPES)[number];
 
 /**
  * Global modal state hook using nuqs
- * Stores modal state in URL query params for shareable/bookmarkable modals
+ * Stores modal state in URL query params for shareable/bookmarkable modals.
+ * Uses `history: "replace"` so opening/closing a modal doesn't pollute the
+ * history stack (previously each open/close pushed up to 4 entries).
  */
 export function useModal() {
   const [modal, setModal] = useQueryState(
     "modal",
     parseAsStringLiteral(MODAL_TYPES).withOptions({
-      history: "push",
+      history: "replace",
       shallow: true,
     })
   );
@@ -24,7 +26,7 @@ export function useModal() {
   const [settingsSection, setSettingsSection] = useQueryState(
     "section",
     parseAsStringLiteral(SETTINGS_SECTION_TYPES).withOptions({
-      history: "push",
+      history: "replace",
       shallow: true,
     })
   );

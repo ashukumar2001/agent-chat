@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `usage_user_period_start_idx` ON `usage` (`user_id`,`period_start`);

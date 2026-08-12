@@ -1,0 +1,12 @@
+# Taste
+- Prefers using shadcn/ui components and following shadcn guidelines when building or rebuilding UI. Confidence: 0.9
+- Prefers Tailwind CSS utility classes for styling. Confidence: 0.7
+- Prefers large icons in UI components. Confidence: 0.5
+- Keeps changed code free of TypeScript and lint errors. Confidence: 0.7
+- Uses Bun as the package manager/build tool (e.g., `bun run build`). Confidence: 0.8
+- Follows attached plans exactly: marks to-dos as in_progress as work progresses and completes all of them before stopping. Confidence: 0.85
+- Prefers concise commit messages. Confidence: 0.9
+- Stages only the files explicitly listed for a commit and avoids including unrelated files. Confidence: 0.7
+- Prefers explanations of the changes that were made. Confidence: 0.5
+- Cares about backward compatibility and not breaking existing implementations. Confidence: 0.5
+- Prefers fast, native-feeling UX flows and dislikes slow redirect/round-trip patterns. Confidence: 0.6

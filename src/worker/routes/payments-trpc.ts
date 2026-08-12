@@ -5,25 +5,33 @@ import { eq, desc } from "drizzle-orm";
 
 export const payments = router({
   subscription: protectedProcedure.query(async ({ ctx }) => {
-    // Get the most recent subscription, prioritizing active ones
-    const userSubscription = await db
+    // Get the most recent subscription, prioritizing active ones — a newer
+    // pending/cancelled checkout must not shadow a current subscription.
+    const userSubscriptions = await db
       .select()
       .from(subscriptions)
       .where(eq(subscriptions.userId, ctx.session.user.id))
       .orderBy(desc(subscriptions.createdAt))
-      .limit(1);
+      .limit(10);
 
-    if (!userSubscription.length) {
+    const now = new Date();
+    const sub =
+      userSubscriptions.find((s) => {
+        if (s.status !== "active") return false;
+        if (s.nextBillingDate && new Date(s.nextBillingDate) < now) return false;
+        return true;
+      }) ?? userSubscriptions[0];
+
+    if (!sub) {
       return {
         hasSubscription: false,
         subscription: null,
       };
     }
 
-    const sub = userSubscription[0];
     const isActive = sub.status === "active";
     const isExpired =
-      sub.nextBillingDate && new Date(sub.nextBillingDate) < new Date();
+      sub.nextBillingDate && new Date(sub.nextBillingDate) < now;
 
     return {
       hasSubscription: isActive && !isExpired,

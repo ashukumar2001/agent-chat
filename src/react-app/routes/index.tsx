@@ -30,7 +30,6 @@ function RouteComponent() {
 
       if (!newChat) {
         toast.error("Failed to create chat");
-        setIsSubmitting(false);
         return;
       }
       navigate({
@@ -46,6 +45,8 @@ function RouteComponent() {
       });
     } catch (error) {
       console.warn(error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
   return (

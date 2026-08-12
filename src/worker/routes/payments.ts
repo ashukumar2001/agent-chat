@@ -8,6 +8,28 @@ import { getPeriodBoundaries, getPlanByProductId } from "../lib/plans";
 import { nanoid } from "nanoid";
 
 const paymentsApp = new Hono<{ Bindings: Env }>();
+
+/**
+ * Resolve the app userId for a Dodo event. Prefer the mapping established in
+ * the `customers` table (keyed by Dodo customer id); fall back to the
+ * checkout metadata only if no customer is known yet. Never throws on a
+ * missing id so a malformed event can't fail the webhook.
+ */
+const resolveUserId = async (
+  customerId: string,
+  metadataUserId: string | undefined,
+): Promise<string | null> => {
+  if (customerId) {
+    const customer = await db
+      .select()
+      .from(customers)
+      .where(eq(customers.id, customerId))
+      .limit(1);
+    if (customer.length) return customer[0].userId;
+  }
+  return metadataUserId && metadataUserId.trim() ? metadataUserId : null;
+};
+
 // /api/payments/webhooks
 // Webhook handler for payment events
 paymentsApp.post(
@@ -20,13 +42,21 @@ paymentsApp.post(
       console.log("Payment succeeded:", payload.data.payment_id);
 
       const paymentData = payload.data;
+      const userId = await resolveUserId(
+        paymentData.customer.customer_id,
+        paymentData.metadata?.userId as string | undefined,
+      );
+      if (!userId) {
+        console.warn("Payment succeeded: no userId resolved, skipping");
+        return;
+      }
 
       // Store payment record
       await db
         .insert(payments)
         .values({
           id: paymentData.payment_id,
-          userId: paymentData.metadata?.userId as string,
+          userId,
           customerId: paymentData.customer.customer_id,
           productId: paymentData.product_cart?.[0]?.product_id ?? "",
           amount: paymentData.total_amount,
@@ -47,12 +77,20 @@ paymentsApp.post(
       console.log("Payment failed:", payload.data.payment_id);
 
       const paymentData = payload.data;
+      const userId = await resolveUserId(
+        paymentData.customer.customer_id,
+        paymentData.metadata?.userId as string | undefined,
+      );
+      if (!userId) {
+        console.warn("Payment failed: no userId resolved, skipping");
+        return;
+      }
 
       await db
         .insert(payments)
         .values({
           id: paymentData.payment_id,
-          userId: paymentData.metadata?.userId as string,
+          userId,
           customerId: paymentData.customer.customer_id,
           productId: paymentData.product_cart?.[0]?.product_id ?? "",
           amount: paymentData.total_amount,
@@ -73,13 +111,21 @@ paymentsApp.post(
       console.log("Subscription active:", payload.data.subscription_id);
 
       const subData = payload.data;
+      const userId = await resolveUserId(
+        subData.customer.customer_id,
+        subData.metadata?.userId as string | undefined,
+      );
+      if (!userId) {
+        console.warn("Subscription active: no userId resolved, skipping");
+        return;
+      }
 
       // Upsert customer
       await db
         .insert(customers)
         .values({
           id: subData.customer.customer_id,
-          userId: subData.metadata?.userId as string,
+          userId,
           email: subData.customer.email,
           name: subData.customer.name,
           createdAt: new Date(),
@@ -91,7 +137,7 @@ paymentsApp.post(
         .insert(subscriptions)
         .values({
           id: subData.subscription_id,
-          userId: subData.metadata?.userId as string,
+          userId,
           customerId: subData.customer.customer_id,
           productId: subData.product_id,
           status: "active",
@@ -130,10 +176,18 @@ paymentsApp.post(
 
       // Create a new usage record for the new billing period
       // This effectively resets usage for the new period
-      const userId = subData.metadata?.userId as string;
+      const userId = await resolveUserId(
+        subData.customer.customer_id,
+        subData.metadata?.userId as string | undefined,
+      );
       if (userId) {
         const plan = getPlanByProductId(subData.product_id);
-        const { start, end } = getPeriodBoundaries(plan);
+        // Align the usage window with the actual billing cycle, not the
+        // calendar month, so the renewal resets exactly once per cycle.
+        const { start, end } = getPeriodBoundaries(plan, {
+          previousBillingDate: subData.previous_billing_date,
+          nextBillingDate: subData.next_billing_date,
+        });
 
         // Check if a usage record already exists for this period
         const existingUsage = await db

@@ -57,6 +57,14 @@ export type InlineCitationCardTriggerProps = ComponentProps<typeof Badge> & {
   sources: string[];
 };
 
+const formatSourceHostname = (url: string): string => {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return url;
+  }
+};
+
 export const InlineCitationCardTrigger = ({
   sources,
   className,
@@ -75,7 +83,7 @@ export const InlineCitationCardTrigger = ({
   >
     {sources[0] ? (
             <>
-              {new URL(sources[0]).hostname}{" "}
+              {formatSourceHostname(sources[0])}{" "}
               {sources.length > 1 && `+${sources.length - 1}`}
             </>
           ) : (

@@ -52,10 +52,25 @@ export const PLANS: Record<PlanId, PlanConfig> = {
 };
 
 /**
+ * Reduce a model id to its canonical form, e.g. `openrouter:openai/gpt-5.2`
+ * becomes `gpt-5.2`, so plan/premium checks treat provider-prefixed models
+ * identically to their first-party counterparts.
+ */
+export const normalizeModelId = (modelId: string): string => {
+  const withoutProviderPrefix = modelId.includes(":")
+    ? modelId.slice(modelId.indexOf(":") + 1)
+    : modelId;
+  const lastSlash = withoutProviderPrefix.lastIndexOf("/");
+  return lastSlash === -1
+    ? withoutProviderPrefix
+    : withoutProviderPrefix.slice(lastSlash + 1);
+};
+
+/**
  * Check if a model is a premium model
  */
 export const isPremiumModel = (modelId: string): boolean => {
-  return PREMIUM_MODELS.includes(modelId);
+  return PREMIUM_MODELS.includes(normalizeModelId(modelId));
 };
 
 /**
@@ -69,7 +84,7 @@ export const isModelAllowedForPlan = (
   if (plan.limits.allowedModels === null) {
     return true;
   }
-  return plan.limits.allowedModels.includes(modelId);
+  return plan.limits.allowedModels.includes(normalizeModelId(modelId));
 };
 
 /**
@@ -83,11 +98,21 @@ export const getPlanByProductId = (productId: string | null): PlanConfig => {
   return plan || PLANS.free;
 };
 
+export type SubscriptionPeriod = {
+  previousBillingDate?: Date | null;
+  nextBillingDate?: Date | null;
+};
+
 /**
- * Get period boundaries for a plan
+ * Get period boundaries for a plan.
+ *
+ * Monthly plans use the subscription's actual billing cycle when available so
+ * quotas reset on the billing date rather than the calendar month — otherwise
+ * renewals and calendar rollovers could reset usage twice or not at all.
  */
 export const getPeriodBoundaries = (
-  plan: PlanConfig
+  plan: PlanConfig,
+  subscription?: SubscriptionPeriod | null
 ): { start: Date; end: Date } => {
   const now = new Date();
 
@@ -98,10 +123,19 @@ export const getPeriodBoundaries = (
     const end = new Date(start);
     end.setDate(end.getDate() + 1);
     return { start, end };
-  } else {
-    // Monthly period: 1st of month to 1st of next month
-    const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  }
+
+  // Monthly period: align with the billing cycle when we know it
+  if (subscription?.nextBillingDate) {
+    const end = new Date(subscription.nextBillingDate);
+    const start = subscription.previousBillingDate
+      ? new Date(subscription.previousBillingDate)
+      : new Date(end.getFullYear(), end.getMonth() - 1, end.getDate());
     return { start, end };
   }
+
+  // Fallback: calendar month (1st of month to 1st of next month)
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  return { start, end };
 };

@@ -5,7 +5,6 @@ import { logger } from "hono/logger";
 import { Hono } from "hono";
 import { createContext } from "./trpc";
 import { appRouter } from "./routes";
-import { routeAgentRequest } from "agents";
 import { auth } from "./lib/auth";
 import { agentsMiddleware } from "hono-agents";
 import paymentsApp from "./routes/payments";
@@ -13,13 +12,30 @@ import usageApp from "./routes/usage";
 
 const app = new Hono<{ Bindings: Env }>();
 app.use("*", logger());
+const assertAgentSession = async (
+  req: Request,
+  lobbyName: string
+): Promise<Response | undefined> => {
+  const session = await auth.api.getSession({ headers: req.headers });
+  if (!session) return new Response("Unauthorized", { status: 401 });
+  // The agent name is `${userId}:${chatId}` — the session user must own it.
+  const agentUserId = lobbyName.split(":")[0];
+  if (!agentUserId || agentUserId !== session.user.id) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+};
+
 app.use(
   "*",
   agentsMiddleware({
     options: {
-      async onBeforeConnect(req) {
-        const session = await auth.api.getSession({ headers: req.headers });
-        if (!session) return new Response("Unauthorized", { status: 401 });
+      async onBeforeConnect(req, lobby) {
+        return assertAgentSession(req, lobby.name);
+      },
+      async onBeforeRequest(req, lobby) {
+        // Plain HTTP requests (e.g. /agents/**/get-messages) must also be
+        // authorized — onBeforeConnect only runs for WebSocket upgrades.
+        return assertAgentSession(req, lobby.name);
       },
       prefix: "agents",
     },
@@ -39,11 +55,5 @@ app.use("/trpc/*", async (c, next) =>
     createContext: () => createContext(c),
   })(c, next)
 );
-app.get("/agents/**", async (c) => {
-  return (
-    (await routeAgentRequest(c.req.raw, c.env)) ||
-    new Response("Not found", { status: 404 })
-  );
-});
 
 export default app;

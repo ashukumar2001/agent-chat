@@ -129,7 +129,7 @@
     "cf-check-size": "tsc && vite build && wrangler deploy --dry-run",
     "deploy:prod": "wrangler deploy --name eddy",
     "deploy": "wrangler deploy",
-    "dev": "CLOUDFLARE_ENV=development vite",
+    "dev": "NODE_ENV=development CLOUDFLARE_ENV=development vite",
     "lint": "eslint .",
     "preview": "npm run build && vite preview",
     "ui": "bunx --bun shadcn",

@@ -23,10 +23,22 @@ type UsageBillingContext = {
   userId: string;
   modelId: string;
   hasOwnApiKey: boolean;
+  startedAt: number;
 };
 
 export class ChatAgent extends AIChatAgent<Env> {
   private _usageBillingByRequestId = new Map<string, UsageBillingContext>();
+  private static readonly USAGE_ENTRY_TTL_MS = 10 * 60 * 1000;
+  private _lastBillingSweepAt = 0;
+
+  /**
+   * Agent instances are named `${userId}:${chatId}`. `this.name` is stored
+   * with the Durable Object, so it survives hibernation — unlike in-memory
+   * fields set in `onConnect`.
+   */
+  private getOwnerUserId(): string {
+    return this.name.split(":")[0] ?? "";
+  }
   /**
    * Creates an SSE-formatted error response that will be processed by _reply.
    * This ensures errors go through the normal stream processing path.
@@ -49,14 +61,39 @@ export class ChatAgent extends AIChatAgent<Env> {
     });
   }
 
+  /**
+   * Evict stale billing-context entries for requests that never reached
+   * onChatResponse (e.g. dropped connections mid-stream), preventing the
+   * map from growing unbounded over the lifetime of the Durable Object.
+   */
+  private sweepStaleUsageBillingEntries(now: number = Date.now()) {
+    if (now - this._lastBillingSweepAt < 60_000) return;
+    this._lastBillingSweepAt = now;
+    for (const [requestId, entry] of this._usageBillingByRequestId) {
+      if (now - entry.startedAt > ChatAgent.USAGE_ENTRY_TTL_MS) {
+        this._usageBillingByRequestId.delete(requestId);
+      }
+    }
+  }
+
   async onChatMessage(
     onFinish: StreamTextOnFinishCallback<ToolSet>,
     { abortSignal, body: metadata, requestId }: OnChatMessageOptions,
   ) {
-    const userId = (metadata?.userId as string) || "";
+    const ownerUserId = this.getOwnerUserId();
+    const claimedUserId = (metadata?.userId as string) || "";
     const modelId = (metadata?.model as string) ?? DEFUALT_MODEL;
     const webSearchEnabled = Boolean(metadata?.webSearch);
     const startTime = Date.now();
+
+    // Never trust client metadata to pick the billed user. The DO name is
+    // the owner, and the HTTP/WS gateway already checked the session
+    // matches it. A mismatched claim is rejected; a missing claim (e.g.
+    // some tool continuations) still proceeds as the owner.
+    if (!ownerUserId || (claimedUserId && claimedUserId !== ownerUserId)) {
+      return this.createErrorResponse("Unauthorized");
+    }
+    const userId = ownerUserId;
 
     const modelConfig = MODELS.find((model) => model.id === modelId);
 
@@ -95,10 +132,12 @@ export class ChatAgent extends AIChatAgent<Env> {
       );
     }
 
+    this.sweepStaleUsageBillingEntries(startTime);
     this._usageBillingByRequestId.set(requestId, {
       userId,
       modelId,
       hasOwnApiKey,
+      startedAt: startTime,
     });
 
     // Use streamText directly and return with metadata
@@ -122,11 +161,17 @@ export class ChatAgent extends AIChatAgent<Env> {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (onFinish as any)(finishResult);
       },
-      tools: modelConfig.tools
-        ? ((modelConfig.webSearch && webSearchEnabled
-            ? { google_search: google.tools.googleSearch({}) }
-            : tools) as ToolSet)
-        : undefined,
+      // When web search is enabled, merge the search tool into the regular
+      // toolset instead of replacing it — otherwise client tools like
+      // getLocation and approval-required tools silently disappear.
+      // google_search is Google-specific, so only inject it for Google models.
+      tools: (modelConfig.tools
+        ? modelConfig.webSearch &&
+          webSearchEnabled &&
+          modelConfig.providerId === "google"
+          ? { ...tools, google_search: google.tools.googleSearch({}) }
+          : tools
+        : undefined) as ToolSet | undefined,
       stopWhen: stepCountIs(5),
       abortSignal,
       providerOptions: {

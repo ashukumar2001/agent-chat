@@ -1,7 +1,7 @@
 import { useAgent } from "agents/react";
 import { ChatBox } from "./chat-box";
 import { ChatInput } from "../chat-input";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DEFUALT_MODEL } from "@worker/lib/config";
 import { toast } from "sonner";
 import { useAgentChat } from "@cloudflare/ai-chat/react";
@@ -9,7 +9,8 @@ import { ChatAddToolApproveResponseFunction, isToolUIPart } from "ai";
 import { ChatMessage, ChatMessageMetadata } from "@/types/ai-types";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useChatUtils } from "@/hooks/use-chat-utils";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { trpc } from "@/lib/trpc-client";
 import { USAGE_STATS_QUERY_KEY } from "@/hooks/use-usage";
 
 export const Chat = ({
@@ -29,13 +30,21 @@ export const Chat = ({
       };
     },
   });
-  const { createNewChatMutation, getChatById, updateChatMutation } =
-    useChatUtils();
+  const { createNewChatMutation, updateChatMutation } = useChatUtils();
   const queryClient = useQueryClient();
-  const currentChat = useMemo(
-    () => (chatId ? getChatById(chatId) : null),
-    [chatId, getChatById],
+
+  // Derive the chat reactively from a subscribing query so we never act on a
+  // stale value while the chats list refetches (previously caused a duplicate
+  // insert race right after creating a chat).
+  const chatByIdQuery = useQuery(
+    trpc.chats.chatById.queryOptions(
+      { chatId: chatId ?? "" },
+      { enabled: Boolean(chatId) }
+    )
   );
+  // The query is disabled without a chatId, so its data is already the
+  // authoritative source (null when on the new-chat page).
+  const currentChat = chatByIdQuery.data ?? null;
 
   const agent = useAgent({
     agent: "chat-agent",
@@ -67,19 +76,29 @@ export const Chat = ({
       if ("addToolOutput" in params) {
         const { toolCall, addToolOutput } = params;
         if (toolCall.toolName === "getLocation") {
-          const position = await new Promise<GeolocationPosition>(
-            (resolve, reject) => {
-              navigator.geolocation.getCurrentPosition(resolve, reject);
-            },
-          );
-          await new Promise((resolve) => setTimeout(resolve, 2000));
-          addToolOutput({
-            toolCallId: toolCall.toolCallId,
-            output: {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-            },
-          });
+          try {
+            const position = await new Promise<GeolocationPosition>(
+              (resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject);
+              },
+            );
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+            addToolOutput({
+              toolCallId: toolCall.toolCallId,
+              output: {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+              },
+            });
+          } catch (error) {
+            // Without this, a denied/timed-out geolocation promise leaves the
+            // tool part pending forever and stalls the conversation.
+            addToolOutput({
+              toolCallId: toolCall.toolCallId,
+              state: "output-error",
+              errorText: "Unable to get location",
+            });
+          }
         }
       }
     },
@@ -98,7 +117,12 @@ export const Chat = ({
   const [isWebSearchEnabled, setIsWebSearchEnabled] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Set once the user picks a model manually so the chat-sync effect below
+  // doesn't stomp their selection with the chat's persisted model.
+  const userChangedModelRef = useRef(false);
+
   const handleModelChange = async (newModel: string) => {
+    userChangedModelRef.current = true;
     setSelectedModel(newModel);
 
     // Update the model in the database if chat exists
@@ -124,26 +148,31 @@ export const Chat = ({
     agentAddToolApprovalResponse(data);
   };
   const ensureChatExists = async (
-    chatId: string | undefined,
+    chatIdArg: string | undefined,
     input: string,
     customChatId?: string,
   ) => {
-    if (!chatId) {
-      const newChat = await createNewChatMutation.mutateAsync({
-        model: selectedModel,
-        id: customChatId,
-        name: input,
-      });
-      if (!newChat) return;
-      return newChat.id;
+    if (currentChat?.id) return currentChat.id;
+
+    const routeChatId = customChatId ?? chatIdArg;
+
+    // If we have a route chatId but the chat query hasn't settled yet, wait
+    // for it — creating the chat before the query resolves can race with an
+    // existing row (duplicate primary key) and drop the first message.
+    if (routeChatId && chatByIdQuery.isPending) {
+      await chatByIdQuery.refetch();
     }
-    if (agentMessages.length === 0) {
-      await updateChatMutation.mutateAsync({
-        chatId,
-        name: input,
-      });
-    }
-    return chatId;
+    // Re-read via the query directly: the closure's `currentChat` is the
+    // render-time value, which can trail the refetched data.
+    if (chatByIdQuery.data) return chatByIdQuery.data.id;
+
+    const newChat = await createNewChatMutation.mutateAsync({
+      model: selectedModel,
+      id: routeChatId || undefined,
+      name: input,
+    });
+    if (!newChat) return;
+    return newChat.id;
   };
   const onSubmit = async (
     input?: string,
@@ -185,7 +214,13 @@ export const Chat = ({
 
   const hasSubmittedRouterMessage = useRef(false);
   useEffect(() => {
-    if (routerState.message && !hasSubmittedRouterMessage.current) {
+    // Wait for the chatById query to settle so auto-submitted messages never
+    // race chat creation (duplicate insert / lost first message).
+    if (
+      routerState.message &&
+      !hasSubmittedRouterMessage.current &&
+      !chatByIdQuery.isPending
+    ) {
       hasSubmittedRouterMessage.current = true;
       onSubmit(routerState.message, routerState.chatConfig).then(() => {
         navigate({ to: routerState.pathname, replace: true });
@@ -195,10 +230,12 @@ export const Chat = ({
       hasSubmittedRouterMessage.current = false;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [routerState]);
+  }, [routerState, chatByIdQuery.isPending]);
 
-  // Update selectedModel when currentChat changes (e.g., navigating to different chat)
+  // Update selectedModel when currentChat changes (e.g., navigating to
+  // different chat), unless the user picked one manually.
   useEffect(() => {
+    if (userChangedModelRef.current) return;
     if (currentChat?.model) {
       setSelectedModel(currentChat.model);
     } else {
