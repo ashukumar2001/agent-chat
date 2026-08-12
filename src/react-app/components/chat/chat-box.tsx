@@ -36,17 +36,18 @@ export const ChatBox = ({
       }
 
       if (lastMessage?.role === "assistant") {
-        const partsCount = lastMessage.parts?.length || 0;
+        const visibleParts =
+          lastMessage.parts?.filter((part) => part.type !== "step-start") ?? [];
 
-        if (partsCount <= 1) {
+        if (visibleParts.length === 0) {
           return true;
         }
-        const lastPart = lastMessage?.parts?.[partsCount - 1];
+
+        const lastPart = visibleParts[visibleParts.length - 1];
         if (
           lastPart &&
           ((lastPart.type.startsWith("tool-") &&
             (lastPart as ToolUIPart).state === "approval-responded") ||
-            lastPart.type === "step-start" ||
             (lastPart.type === "text" && lastPart.text === ""))
         ) {
           return true;

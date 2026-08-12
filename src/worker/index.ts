@@ -12,10 +12,19 @@ import usageApp from "./routes/usage";
 
 const app = new Hono<{ Bindings: Env }>();
 app.use("*", logger());
+const PARTYKIT_ROOM_HEADER = "x-partykit-room";
+
+const withPartyKitRoom = (req: Request, room: string): Request => {
+  if (req.headers.get(PARTYKIT_ROOM_HEADER) === room) return req;
+  const headers = new Headers(req.headers);
+  headers.set(PARTYKIT_ROOM_HEADER, room);
+  return new Request(req, { headers });
+};
+
 const assertAgentSession = async (
   req: Request,
   lobbyName: string
-): Promise<Response | undefined> => {
+): Promise<Response | Request> => {
   const session = await auth.api.getSession({ headers: req.headers });
   if (!session) return new Response("Unauthorized", { status: 401 });
   // The agent name is `${userId}:${chatId}` — the session user must own it.
@@ -23,6 +32,9 @@ const assertAgentSession = async (
   if (!agentUserId || agentUserId !== session.user.id) {
     return new Response("Unauthorized", { status: 401 });
   }
+  // PartyServer reads this.name from ctx.id.name. Older local workerd
+  // builds leave that unset; the room header is the documented fallback.
+  return withPartyKitRoom(req, lobbyName);
 };
 
 app.use(

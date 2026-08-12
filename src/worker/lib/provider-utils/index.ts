@@ -1,5 +1,5 @@
 import { anthropic, createAnthropic } from "@ai-sdk/anthropic";
-import { createGoogleGenerativeAI, google } from "@ai-sdk/google";
+import { createGoogle, google } from "@ai-sdk/google";
 import { createMistral, mistral } from "@ai-sdk/mistral";
 import { createOpenAI, openai } from "@ai-sdk/openai";
 import { createPerplexity, perplexity } from "@ai-sdk/perplexity";
@@ -19,9 +19,7 @@ import type {
 
 type OpenAIChatSettings = Parameters<typeof createOpenAI>[0];
 type MistralProviderSettings = Parameters<typeof createMistral>[0];
-type GoogleGenerativeAIProviderSettings = Parameters<
-  typeof createGoogleGenerativeAI
->[0];
+type GoogleProviderSettings = Parameters<typeof createGoogle>[0];
 type PerplexityProviderSettings = Parameters<typeof createPerplexity>[0];
 type AnthropicProviderSettings = Parameters<typeof createAnthropic>[0];
 type XaiProviderSettings = Parameters<typeof createXai>[0];
@@ -34,7 +32,7 @@ type ModelSettings<T extends SupportedModel> = T extends OpenAIModel
     : T extends PerplexityModel
       ? PerplexityProviderSettings
       : T extends GeminiModel
-        ? GoogleGenerativeAIProviderSettings
+        ? GoogleProviderSettings
         : T extends AnthropicModel
           ? AnthropicProviderSettings
           : T extends XaiModel
@@ -76,8 +74,8 @@ export function openproviders<T extends SupportedModel>(
 
   if (provider === "google") {
     if (apiKey) {
-      const googleProvider = createGoogleGenerativeAI({
-        ...(settings as GoogleGenerativeAIProviderSettings),
+      const googleProvider = createGoogle({
+        ...(settings as GoogleProviderSettings),
         apiKey,
       });
       return googleProvider(modelId as GeminiModel);
@@ -116,9 +114,9 @@ export function openproviders<T extends SupportedModel>(
         ...(settings as XaiProviderSettings),
         apiKey,
       });
-      return xaiProvider(modelId as XaiModel);
+      return xaiProvider.chat(modelId as XaiModel);
     }
-    return xai(modelId as XaiModel);
+    return xai.chat(modelId as XaiModel);
   }
 
   throw new Error(`Unsupported model: ${modelId}`);

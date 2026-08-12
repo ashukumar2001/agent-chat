@@ -7,6 +7,7 @@ import { Check, Copy } from "lucide-react";
 import {
   type ChatAddToolApproveResponseFunction,
   getToolName,
+  isReasoningUIPart,
   isToolUIPart,
   ToolUIPart,
 } from "ai";
@@ -165,21 +166,50 @@ export const AssistantMessage = ({
                     )}
                 </div>
               );
-            } else if (part.type === "reasoning") {
+            } else if (isReasoningUIPart(part)) {
+              const reasoningText = part.text ?? "";
+              const isReasoningStreaming =
+                status === "streaming" &&
+                isLastMessage &&
+                part.state === "streaming";
+              if (!isReasoningStreaming && reasoningText.trim() === "") {
+                return;
+              }
               return (
                 <Reasoning
-                  key={`${id}-${idx}`}
-                  isStreaming={
-                    status === "streaming" &&
-                    idx === parts.length - 1 &&
-                    isLastMessage
-                  }
+                  key={part.id ?? `${id}-${idx}`}
+                  isStreaming={isReasoningStreaming}
                 >
                   <ReasoningTrigger />
                   <ReasoningContent className="text-muted-foreground">
-                    {part.text}
+                    {reasoningText}
                   </ReasoningContent>
                 </Reasoning>
+              );
+            } else if (part.type === "file" || part.type === "reasoning-file") {
+              const isImage = part.mediaType.startsWith("image");
+              const label =
+                part.type === "file" ? (part.filename ?? "File") : "Reasoning file";
+              if (isImage) {
+                return (
+                  <img
+                    key={`${id}-${idx}`}
+                    src={part.url}
+                    alt={label}
+                    className="h-auto max-w-full overflow-hidden rounded-md"
+                  />
+                );
+              }
+              return (
+                <a
+                  key={`${id}-${idx}`}
+                  href={part.url}
+                  className="text-muted-foreground text-sm underline"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {label}
+                </a>
               );
             }
             return;

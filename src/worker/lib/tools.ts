@@ -8,7 +8,6 @@ const getWeatherInformationTool = tool({
   inputSchema: z.object({
     city: z.string().describe("The name of the city to get weather for"),
   }),
-  needsApproval: true,
   execute: async ({ city }) => {
     // sleep 2s
     await new Promise((res) => setTimeout(res, 2000));

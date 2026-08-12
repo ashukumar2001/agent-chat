@@ -1,16 +1,19 @@
 import {
   convertToModelMessages,
+  createUIMessageStreamResponse,
   streamText,
-  stepCountIs,
+  isStepCount,
   LanguageModel,
-  StreamTextOnFinishCallback,
+  GenerateTextOnFinishCallback,
   ToolSet,
+  toUIMessageStream,
   type UIMessage,
 } from "ai";
 import { tools } from "../lib/tools";
 import { DEFAULT_SYSTEM_PROMPT, DEFUALT_MODEL } from "../lib/config";
 import { MODELS } from "../lib/models";
-import { google, GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
+import type { ModelConfig } from "../lib/models/types";
+import { google, type GoogleLanguageModelOptions } from "@ai-sdk/google";
 import { getUserKey } from "../lib/user-keys";
 import { AIChatAgent, type OnChatMessageOptions } from "@cloudflare/ai-chat";
 import {
@@ -24,6 +27,52 @@ type UsageBillingContext = {
   modelId: string;
   hasOwnApiKey: boolean;
   startedAt: number;
+};
+
+/**
+ * Ask providers to return thought text. Effort/budget settings are omitted so
+ * they cannot override the portable `reasoning` parameter.
+ *
+ * OpenRouter ignores the top-level `reasoning` flag and only emits thoughts
+ * when `providerOptions.openrouter.reasoning` is set — including models that
+ * are served through OpenRouter under another providerId (e.g. DeepSeek).
+ */
+const reasoningProviderOptions = (
+  modelConfig: ModelConfig,
+): NonNullable<Parameters<typeof streamText>[0]["providerOptions"]> => {
+  const usesOpenRouter =
+    modelConfig.providerId === "openrouter" ||
+    modelConfig.providerId === "deepseek";
+
+  if (usesOpenRouter) {
+    return {
+      openrouter: {
+        reasoning: {
+          enabled: true,
+          exclude: false,
+          effort: "medium",
+        },
+      },
+    };
+  }
+
+  if (modelConfig.providerId === "google") {
+    return {
+      google: {
+        thinkingConfig: { includeThoughts: true },
+      } satisfies GoogleLanguageModelOptions,
+    };
+  }
+
+  if (modelConfig.providerId === "openai") {
+    return { openai: { reasoningSummary: "auto" } };
+  }
+
+  if (modelConfig.providerId === "xai") {
+    return { xai: { reasoningSummary: "auto" } };
+  }
+
+  return {};
 };
 
 export class ChatAgent extends AIChatAgent<Env> {
@@ -77,7 +126,7 @@ export class ChatAgent extends AIChatAgent<Env> {
   }
 
   async onChatMessage(
-    onFinish: StreamTextOnFinishCallback<ToolSet>,
+    onFinish: GenerateTextOnFinishCallback<ToolSet>,
     { abortSignal, body: metadata, requestId }: OnChatMessageOptions,
   ) {
     const ownerUserId = this.getOwnerUserId();
@@ -140,12 +189,31 @@ export class ChatAgent extends AIChatAgent<Env> {
       startedAt: startTime,
     });
 
+    // When web search is enabled, merge the search tool into the regular
+    // toolset instead of replacing it — otherwise client tools like
+    // getLocation and approval-required tools silently disappear.
+    // google_search is Google-specific, so only inject it for Google models.
+    const agentTools = (
+      modelConfig.tools
+        ? modelConfig.webSearch &&
+          webSearchEnabled &&
+          modelConfig.providerId === "google"
+          ? { ...tools, google_search: google.tools.googleSearch({}) }
+          : tools
+        : undefined
+    ) as ToolSet | undefined;
+
+    const enableReasoning = Boolean(modelConfig.reasoning);
+
     // Use streamText directly and return with metadata
     const result = streamText({
-      system: DEFAULT_SYSTEM_PROMPT,
-      messages: await convertToModelMessages(this.messages),
+      instructions: DEFAULT_SYSTEM_PROMPT,
+      messages: (await convertToModelMessages(this.messages)).filter(
+        (message) => message.role !== "system",
+      ),
       model: modelInstance!,
-      onFinish: async (finishResult) => {
+      reasoning: enableReasoning ? "medium" : "provider-default",
+      onEnd: async (finishResult) => {
         // Token usage for every completed model segment (incl. tool-approval continuations)
         if (!hasOwnApiKey && userId) {
           try {
@@ -158,57 +226,48 @@ export class ChatAgent extends AIChatAgent<Env> {
             console.error("Failed to increment token usage:", error);
           }
         }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (onFinish as any)(finishResult);
+        await onFinish(finishResult);
       },
-      // When web search is enabled, merge the search tool into the regular
-      // toolset instead of replacing it — otherwise client tools like
-      // getLocation and approval-required tools silently disappear.
-      // google_search is Google-specific, so only inject it for Google models.
-      tools: (modelConfig.tools
-        ? modelConfig.webSearch &&
-          webSearchEnabled &&
-          modelConfig.providerId === "google"
-          ? { ...tools, google_search: google.tools.googleSearch({}) }
-          : tools
-        : undefined) as ToolSet | undefined,
-      stopWhen: stepCountIs(5),
+      tools: agentTools,
+      toolApproval: {
+        getWeatherInformationTool: "user-approval",
+      },
+      stopWhen: isStepCount(5),
       abortSignal,
-      providerOptions: {
-        google: {
-          ...(modelConfig.reasoning && {
-            thinkingConfig: {
-              includeThoughts: true,
-              thinkingBudget: modelConfig.reasoning ? 1024 : 0,
-            },
-          }),
-        } as GoogleGenerativeAIProviderOptions,
-      },
+      providerOptions: enableReasoning
+        ? reasoningProviderOptions(modelConfig)
+        : undefined,
     });
 
-    return result.toUIMessageStreamResponse({
-      sendSources: true,
-      messageMetadata: ({ part }) => {
-        if (part.type === "start") {
-          return {
-            model: modelId,
-            createdAt: Date.now(),
-            messageCount: this.messages.length,
-          };
-        }
-        if (part.type === "finish-step") {
-          return {
-            providerMetadata:
-              part.providerMetadata?.[modelConfig.providerId] || {},
-          };
-        }
-        if (part.type === "finish") {
-          return {
-            responseTime: Date.now() - startTime,
-            totalTokens: part.totalUsage?.totalTokens,
-          };
-        }
-      },
+    return createUIMessageStreamResponse({
+      stream: toUIMessageStream({
+        stream: result.stream,
+        tools: agentTools,
+        originalMessages: this.messages,
+        sendReasoning: true,
+        sendSources: true,
+        messageMetadata: ({ part }) => {
+          if (part.type === "start") {
+            return {
+              model: modelId,
+              createdAt: Date.now(),
+              messageCount: this.messages.length,
+            };
+          }
+          if (part.type === "finish-step") {
+            return {
+              providerMetadata:
+                part.providerMetadata?.[modelConfig.providerId] || {},
+            };
+          }
+          if (part.type === "finish") {
+            return {
+              responseTime: Date.now() - startTime,
+              totalTokens: part.totalUsage?.totalTokens,
+            };
+          }
+        },
+      }),
     });
   }
 
